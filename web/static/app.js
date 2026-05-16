@@ -405,8 +405,7 @@ async function sendMessage() {
             isStreaming = false;
             document.getElementById("send-btn").disabled = false;
             loadSessions();
-            const voiceBtn = document.getElementById("voice-toggle-btn");
-            if (voiceBtn && voiceBtn.classList.contains("voice-chat-active") && currentStreamText) {
+            if (currentStreamText) {
               speakText(currentStreamText);
             }
           }
@@ -1442,11 +1441,7 @@ function scrollToBottom() {
 
 function initVoice() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    const voiceBtn = document.getElementById("voice-btn");
-    if (voiceBtn) voiceBtn.style.display = "none";
-    return;
-  }
+  if (!SpeechRecognition) return;
 
   voiceRecognition = new SpeechRecognition();
   voiceRecognition.continuous = false;
@@ -1468,53 +1463,45 @@ function initVoice() {
     if (interimTranscript) {
       statusText.textContent = interimTranscript;
     }
-    if (finalTranscript) {
+    if (finalTranscript.trim()) {
       document.getElementById("input-box").value = finalTranscript.trim();
-      stopVoiceInput();
+      stopVoice();
       sendMessage();
     }
   };
 
-  voiceRecognition.onerror = (event) => {
-    console.warn("Voice recognition error:", event.error);
-    stopVoiceInput();
-  };
-
-  voiceRecognition.onend = () => {
-    if (isVoiceActive) {
-      stopVoiceInput();
-    }
-  };
-
-  const voiceBtn = document.getElementById("voice-btn");
-  if (voiceBtn) voiceBtn.style.display = "flex";
+  voiceRecognition.onerror = () => stopVoice();
+  voiceRecognition.onend = () => { if (isVoiceActive) stopVoice(); };
 }
 
-function startVoiceInput() {
+function toggleVoice() {
+  if (isVoiceActive) {
+    stopVoice();
+  } else {
+    startVoice();
+  }
+}
+
+function startVoice() {
   if (!voiceRecognition || isVoiceActive) return;
+  voiceSynth?.cancel();
   isVoiceActive = true;
   const statusEl = document.getElementById("voice-status");
   const statusText = document.getElementById("voice-status-text");
   const voiceBtn = document.getElementById("voice-btn");
   statusEl.style.display = "flex";
   statusText.textContent = "Listening...";
-  voiceBtn.classList.add("voice-active");
-  try {
-    voiceRecognition.start();
-  } catch (e) {
-    stopVoiceInput();
-  }
+  voiceBtn.classList.add("listening");
+  try { voiceRecognition.start(); } catch (e) { stopVoice(); }
 }
 
-function stopVoiceInput() {
+function stopVoice() {
   isVoiceActive = false;
   const statusEl = document.getElementById("voice-status");
   const voiceBtn = document.getElementById("voice-btn");
   statusEl.style.display = "none";
-  if (voiceBtn) voiceBtn.classList.remove("voice-active");
-  try {
-    voiceRecognition?.stop();
-  } catch {}
+  voiceBtn.classList.remove("listening");
+  try { voiceRecognition?.stop(); } catch {}
 }
 
 function speakText(text) {
@@ -1539,17 +1526,5 @@ function speakText(text) {
   const utterance = new SpeechSynthesisUtterance(clean);
   utterance.lang = "en-IN";
   utterance.rate = 1.0;
-  utterance.pitch = 1.0;
   voiceSynth.speak(utterance);
-}
-
-function toggleVoiceChat() {
-  const btn = document.getElementById("voice-toggle-btn");
-  if (btn.classList.contains("voice-chat-active")) {
-    btn.classList.remove("voice-chat-active");
-    voiceSynth?.cancel();
-    stopVoiceInput();
-  } else {
-    btn.classList.add("voice-chat-active");
-  }
 }
