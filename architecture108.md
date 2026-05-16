@@ -67,14 +67,18 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [x] Knowledge upload flow (drag & drop via web UI)
 - [x] Session management (multiple conversations, load/delete)
 - [x] Auto-knowledge capture (conversations saved per session)
+- [x] PIN authentication for web interface (env: AVINYA_WEB_PIN)
+- [x] Document search endpoint and UI (search across indexed documents)
+- [x] Docker deployment (Dockerfile + docker-compose.yml)
+- [x] Ollama error handling and health reporting
 
 ---
 
 ## Phase 1: Make It Actually Useful (Now)
 
 ### 1.1 Always-On Deployment
-- [ ] Dockerize the entire stack (web server + Ollama + ChromaDB)
-- [ ] Docker Compose for one-command deployment
+- [x] Dockerize the entire stack (web server + Ollama + ChromaDB)
+- [x] Docker Compose for one-command deployment
 - [ ] Deploy on a Raspberry Pi 5 or old laptop for 24/7 access
 - [ ] Auto-start on boot (systemd service)
 - [ ] Network access — any device on campus WiFi can reach it
@@ -88,8 +92,8 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [ ] Tagging system — categorize documents (project, budget, meeting, technical, tutorial)
 
 ### 1.3 Web UI Improvements
-- [ ] Authentication — simple PIN or password so only club members can access
-- [ ] Search — search across all indexed documents directly
+- [x] Authentication — simple PIN or password so only club members can access
+- [x] Search — search across all indexed documents directly
 - [ ] Document viewer — click a source to read the full document in-browser
 - [ ] Conversation export — download any conversation as PDF or Markdown
 - [ ] Offline indicator — show when Ollama is down, queue messages
@@ -243,6 +247,19 @@ avinya/
 ├── architecture108.md            # This file
 └── README.md
 ```
+
+---
+
+## Technical Debt & Fixes
+
+- [x] Add error handling for Ollama connection drops
+- [ ] Fix `ui/desktop.py` — currently a wrapper, ensure it works correctly
+- [ ] Consolidate duplicate code between `feynman_desktop.py` and `laptop_desktop.py`
+- [ ] Add rate limiting to web API
+- [ ] Add logging and monitoring
+- [ ] Add tests for core modules
+- [ ] Reduce memory usage for large document collections
+- [ ] Improve embedding quality for technical documents
 
 ---
 
