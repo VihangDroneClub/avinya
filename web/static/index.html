@@ -110,6 +110,7 @@
       <div class="header-actions">
         <span id="confidence-chip" class="chip" style="display:none"></span>
         <span id="model-chip" class="chip">—</span>
+        <button id="voice-toggle-btn" class="icon-btn" title="Voice chat" onclick="toggleVoiceChat()">&#127908;</button>
         <button id="theme-toggle" class="icon-btn" title="Toggle theme">&#9790;</button>
       </div>
     </header>
@@ -127,9 +128,16 @@
 
     <div id="composer">
       <textarea id="input-box" placeholder="Ask Avinya about the club..." rows="1"></textarea>
+      <button id="voice-btn" class="icon-btn" title="Speak" onclick="startVoiceInput()" style="display:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
       <button id="send-btn" onclick="sendMessage()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
       </button>
+    </div>
+    <div id="voice-status" class="voice-status" style="display:none">
+      <div class="voice-pulse"></div>
+      <span id="voice-status-text">Listening...</span>
     </div>
   </main>
 </div>
