@@ -22,5 +22,9 @@ librosa
 openwakeword
 tflite-runtime
 
+# Premium TTS — young Indian female voice (en-IN-NeerjaNeural)
+edge-tts>=6.1
+pydub>=0.25
+
 # Optional tuning via env: see core/config.py
 # AVINYA_MODEL_DEFAULT, AVINYA_MODEL_REASONING, OLLAMA_GENERATE_URL, AVINYA_CHROMA_PATH, ...
