@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Avinya — Vihang AI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Sidebar (desktop) / Drawer (mobile) -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="logo">A</div>
+        <div>
+          <h1>Avinya</h1>
+          <p>The member who never graduates</p>
+        </div>
+      </div>
+      <button id="close-sidebar" class="icon-btn" title="Close">&times;</button>
+    </div>
+
+    <div class="sidebar-section">
+      <button id="new-chat-btn" class="btn-primary full-width">
+        <span class="icon">+</span> New Chat
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Conversations</h3>
+      <div id="session-list" class="session-list"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Knowledge</h3>
+      <div id="knowledge-list" class="knowledge-list">
+        <p class="muted">Loading...</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Actions</h3>
+      <button class="btn-secondary full-width" onclick="uploadKnowledge()">Upload Knowledge</button>
+      <button class="btn-secondary full-width" onclick="reindexKnowledge()">Reindex All</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div id="status-indicator" class="status-chip loading">Connecting...</div>
+    </div>
+  </aside>
+
+  <!-- Overlay for mobile sidebar -->
+  <div id="sidebar-overlay" class="overlay"></div>
+
+  <!-- Main content -->
+  <main id="main">
+    <!-- Header -->
+    <header id="header">
+      <button id="menu-btn" class="icon-btn" title="Menu">&#9776;</button>
+      <div class="header-title">
+        <h2 id="chat-title">Avinya</h2>
+        <span id="chat-subtitle">Ask me anything about the club</span>
+      </div>
+      <div class="header-actions">
+        <span id="model-chip" class="chip">—</span>
+        <button id="theme-toggle" class="icon-btn" title="Toggle theme">&#9790;</button>
+      </div>
+    </header>
+
+    <!-- Chat area -->
+    <div id="chat-container">
+      <div id="chat-messages"></div>
+    </div>
+
+    <!-- Quick prompts -->
+    <div id="quick-prompts">
+      <button class="quick-btn" onclick="sendQuick('What is Vihang Drone Club?')">About the club</button>
+      <button class="quick-btn" onclick="sendQuick('What are the current projects?')">Projects</button>
+      <button class="quick-btn" onclick="sendQuick('How do I join the club?')">How to join</button>
+      <button class="quick-btn" onclick="sendQuick('What are the club rules and traditions?')">Rules & traditions</button>
+    </div>
+
+    <!-- Composer -->
+    <div id="composer">
+      <textarea id="input-box" placeholder="Ask Avinya about the club..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMessage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
+
+<!-- Upload modal -->
+<div id="upload-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Upload Knowledge</h3>
+      <button class="icon-btn" onclick="closeUploadModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted">Upload documents, notes, or any file to add to the club knowledge base.</p>
+      <div id="drop-zone" class="drop-zone">
+        <p>Drag & drop files here</p>
+        <p class="muted">or</p>
+        <label class="btn-primary">
+          Browse Files
+          <input type="file" id="file-input" multiple accept=".pdf,.docx,.xlsx,.md,.txt,.csv" style="display:none" onchange="handleFileSelect(event)">
+        </label>
+      </div>
+      <div id="upload-progress" class="upload-progress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <p id="upload-status">Uploading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,97 +1,125 @@
-# Avinya / Vihang AI Context
+# Avinya — The Member Who Never Graduates
 
-This repository is the local working base for the Vihang AI knowledge automation system built on top of Avinya.
+Avinya is the permanent AI member of **Vihang Drone Club**. Built by seniors before they left, it holds the club's collective knowledge — projects, history, rules, budgets, decisions, and lessons learned — so that future members are never without guidance.
 
-## Current State
+> "No one is there every time, and contact after graduation can't be kept all the time. Avinya fixes that."
 
-The system is complete enough to run end to end locally:
+## What It Does
 
-- document ingestion for PDF, DOCX, and XLSX
-- categorization and markdown formatting
-- archive of processed originals
-- ChromaDB indexing and retrieval
-- FastAPI query, reindex, health, and stats endpoints
-- Telegram command surface and real bot runner
-- Feynman-style desktop UI for laptop use
-- voice stack with Jarvis mode, TTS, STT, and wake word detection
+- **Answers questions** about the club using indexed documents (meeting notes, budgets, project reports)
+- **Guides new members** through onboarding, safety rules, and club culture
+- **Preserves institutional memory** — knowledge doesn't leave when seniors graduate
+- **Accepts new knowledge** — upload documents to keep the club's brain growing
+- **Works offline** — runs locally with Ollama, no cloud dependencies
 
-## Key Entry Points
+## Quick Start
 
-From `/home/pratik/avinya`:
+### Web Interface (Recommended — works on any device)
 
 ```bash
-./venv/bin/python app.py
+# Ingest the built-in knowledge base first
+./venv/bin/python scripts/ingest_knowledge_base.py
+
+# Start the web server
+./venv/bin/python -m web.server
 ```
 
-Runs the CLI entrypoint.
+Then open `http://<server-ip>:8080` on any device — phone, laptop, tablet.
+
+### Desktop App (For laptop use)
 
 ```bash
 ./scripts/launch_desktop.sh
 ```
 
-Runs the current desktop UI shell.
+### CLI
 
 ```bash
-./venv/bin/uvicorn rag.api:app --host 127.0.0.1 --port 8000
+./venv/bin/python app.py
 ```
 
-Runs the local RAG API.
+### Telegram Bot
 
 ```bash
-./venv/bin/python scripts/process_file.py --input <file> --vault ~/vihang_data/vault --archive ~/vihang_data/archive
+AVINYA_TELEGRAM_BOT_TOKEN=<token> ./venv/bin/python scripts/run_telegram_bot.py
 ```
 
-Processes one document manually.
+## Knowledge Base
+
+The `knowledge_base/` directory contains structured club knowledge:
+
+| File | Purpose |
+|---|---|
+| `faq.md` | Frequently asked questions about the club |
+| `onboarding_guide.md` | New member onboarding — safety, skills, culture |
+| `history_and_traditions.md` | Club history, traditions, and lessons learned |
+
+To add your own documents:
+1. Place them in `knowledge_base/` or upload via the web interface
+2. Run `./venv/bin/python scripts/ingest_knowledge_base.py`
+3. Or use the "Upload Knowledge" button in the web UI
+
+## Architecture
+
+- **LLM**: Ollama (`gemma2:2b` for responses, `hermes3:8b` for reasoning)
+- **Embeddings**: `BAAI/bge-small-en-v1.5`
+- **Vector DB**: ChromaDB
+- **Web**: FastAPI + vanilla HTML/CSS/JS (no frontend framework needed)
+- **Desktop**: CustomTkinter (Python Tkinter)
+- **Voice**: Piper TTS, faster-whisper STT, openwakeword
+
+## Project Structure
+
+```
+avinya/
+├── web/                    # Web interface (new)
+│   ├── server.py           # FastAPI web server
+│   └── static/
+│       ├── index.html      # Single-page app
+│       ├── style.css       # Mobile-first responsive design
+│       └── app.js          # Frontend logic
+├── ui/                     # Desktop interfaces
+│   ├── feynman_desktop.py  # Current desktop app (dark theme)
+│   ├── laptop_desktop.py   # Light theme variant
+│   └── desktop.py          # Compatibility wrapper
+├── knowledge_base/         # Structured club knowledge
+│   ├── faq.md
+│   ├── onboarding_guide.md
+│   └── history_and_traditions.md
+├── core/                   # Core modules (config, prompts, sessions)
+├── rag/                    # Retrieval-augmented generation
+├── llm/                    # Ollama adapter and model router
+├── memory/                 # Session memory and summarization
+├── voice/                  # TTS, STT, wake word, orchestrator
+├── telegram/               # Telegram bot
+├── processors/             # Document processing
+├── converters/             # File format conversion
+├── scripts/                # Launchers and utilities
+├── prompts/                # System prompts
+└── tasks/                  # Project planning
+```
+
+## For Seniors Contributing Knowledge
+
+Before you graduate:
+1. Upload your project files, meeting notes, and reports
+2. Add context — explain what future members should know
+3. Document decisions and their reasoning
+4. Record lessons learned from failures and successes
+5. Update Avinya with your contact info if you're willing to be reached
+
+The more you put in, the more valuable Avinya becomes for those who come after you.
+
+## Models
 
 ```bash
-AVINYA_TELEGRAM_BOT_TOKEN=<real_token> ./venv/bin/python scripts/run_telegram_bot.py
+ollama pull gemma2:2b-instruct-q4_K_M
+ollama pull hermes3:8b-llama3.1-q4_K_M
 ```
-
-Runs the Telegram bot. Use a real BotFather token.
-
-## Models On The Machine
-
-The local Ollama setup uses the current lightweight pair:
-
-- `gemma2:2b-instruct-q4_K_M` for default responses
-- `hermes3:8b-llama3.1-q4_K_M` for reasoning
-
-Embeddings use `BAAI/bge-small-en-v1.5`.
-
-## Desktop UI Notes
-
-The old desktop shell was replaced with a Feynman-style interface:
-
-- dark, compact, source-first layout
-- left rail for actions and recent turns
-- center transcript with normal scrolling
-- right side panel for sources and session notes
-- orange accent on black panels
-
-Current module:
-
-- `ui/feynman_desktop.py`
-
-Launcher:
-
-- `scripts/launch_desktop.sh`
-
-## Voice Stack Notes
-
-Jarvis mode exists and the Piper TTS mismatch was fixed by aligning `voice/tts.py` with the installed Piper API. The voice thread now catches synthesis failures instead of crashing the app.
-
-Voice modules:
-
-- `voice/tts.py`
-- `voice/stt.py`
-- `voice/wake_word.py`
-- `voice/audio_recorder.py`
-- `voice/orchestrator.py`
 
 ## Repo Contract
 
 The existing Avinya modules remain the source of truth for:
-
 - prompt assembly
 - memory compression
 - embeddings
@@ -99,16 +127,3 @@ The existing Avinya modules remain the source of truth for:
 - Ollama generation
 
 Do not duplicate those subsystems unless a change explicitly requires replacement.
-
-## Durable Project Files
-
-- `tasks/project_plan.json`
-- `tasks/STATUS.md`
-- `tasks/WORKLOG.md`
-- `docs/HANDOVER.md`
-- `docs/API_REFERENCE.md`
-- `docs/TROUBLESHOOTING.md`
-
-## Notes For Next Work
-
-The next likely extension is to evaluate replacing the current `CKB/` document source with Graphify-based knowledge generation if that integrates cleanly with the existing ingestion and vault pipeline.
