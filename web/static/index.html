@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Avinya — Vihang AI</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#ff7a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -66,6 +71,8 @@
     <div class="sidebar-section">
       <h3>Actions</h3>
       <button class="btn-secondary full-width" onclick="uploadKnowledge()">Upload Knowledge</button>
+      <button class="btn-secondary full-width" onclick="uploadAudio()">Upload Voice Note</button>
+      <button class="btn-secondary full-width" onclick="exportCurrentChat()">Export Chat</button>
       <button class="btn-secondary full-width" onclick="reindexKnowledge()">Reindex All</button>
     </div>
 
@@ -131,6 +138,48 @@
         <div class="progress-bar"><div class="progress-fill"></div></div>
         <p id="upload-status">Uploading...</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Audio upload modal -->
+<div id="audio-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Upload Voice Note</h3>
+      <button class="icon-btn" onclick="closeAudioModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted">Upload a voice recording. Add a text summary alongside for indexing.</p>
+      <div class="drop-zone" id="audio-drop-zone">
+        <p>Drop audio files here</p>
+        <p class="muted">WAV, MP3, M4A, OGG, FLAC</p>
+        <p class="muted">or</p>
+        <label class="btn-primary">
+          Browse Audio
+          <input type="file" id="audio-file-input" multiple accept=".wav,.mp3,.m4a,.ogg,.flac" style="display:none" onchange="handleAudioSelect(event)">
+        </label>
+      </div>
+      <div id="audio-progress" class="upload-progress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <p id="audio-status">Uploading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Document viewer modal -->
+<div id="doc-viewer-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3 id="doc-viewer-title">Document</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="doc-viewer-source" class="muted"></span>
+        <button class="icon-btn" onclick="closeDocViewer()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body doc-viewer-body">
+      <pre id="doc-viewer-content"></pre>
     </div>
   </div>
 </div>

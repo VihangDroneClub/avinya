@@ -1,0 +1,19 @@
+[Unit]
+Description=Ollama AI Model Server
+After=network-online.target
+
+[Service]
+Type=notify
+User=avinya
+Group=avinya
+ExecStart=/usr/local/bin/ollama serve
+Restart=always
+RestartSec=10
+Environment="HOME=/home/avinya"
+Environment="OLLAMA_HOST=127.0.0.1:11434"
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ollama
+
+[Install]
+WantedBy=multi-user.target

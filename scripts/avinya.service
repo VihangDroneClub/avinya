@@ -1,0 +1,32 @@
+[Unit]
+Description=Avinya Web — Vihang Drone Club AI
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=avinya
+Group=avinya
+WorkingDirectory=/opt/avinya
+Environment="PATH=/opt/avinya/venv/bin:/usr/local/bin:/usr/bin"
+Environment="AVINYA_CHROMA_PATH=/opt/avinya/chroma_db"
+Environment="AVINYA_VAULT_PATH=/opt/avinya/vihang_data/vault"
+Environment="AVINYA_INBOX_PATH=/opt/avinya/vihang_data/inbox"
+Environment="AVINYA_ARCHIVE_PATH=/opt/avinya/vihang_data/archive"
+Environment="AVINYA_WEB_PIN=vihang2026"
+Environment="OLLAMA_URL=http://127.0.0.1:11434/api/generate"
+ExecStart=/opt/avinya/venv/bin/python -m web.server
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=avinya
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/avinya/chroma_db /opt/avinya/vihang_data /opt/avinya/backups
+
+[Install]
+WantedBy=multi-user.target

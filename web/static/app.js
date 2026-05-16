@@ -87,6 +87,14 @@ function initApp() {
   loadSessions();
   loadKnowledge();
   showWelcome();
+  registerSW();
+}
+
+// PWA
+function registerSW() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+  }
 }
 
 // Health check
@@ -133,10 +141,14 @@ async function searchDocs() {
     }
 
     resultsEl.innerHTML = data.results.map(r => `
-      <div class="search-result-item" onclick="useSearchResult('${escapeHtml(r.source)}', '${escapeHtml(r.content.substring(0, 100))}')">
+      <div class="search-result-item">
         <span class="sr-score">${r.score.toFixed(2)}</span>
         <div class="sr-source">${escapeHtml(r.source)}</div>
         <div class="sr-content">${escapeHtml(r.content)}</div>
+        <div style="margin-top:4px;display:flex;gap:4px;">
+          <button class="search-action-btn" onclick="viewDocument('${escapeHtml(r.metadata.path || r.source)}')">View</button>
+          <button class="search-action-btn" onclick="useSearchResult('${escapeHtml(r.source)}', '${escapeHtml(r.content.substring(0, 100))}')">Ask</button>
+        </div>
       </div>
     `).join("");
   } catch {
@@ -148,6 +160,74 @@ function useSearchResult(source, snippet) {
   document.getElementById("input-box").value = `What does ${source} say about this: ${snippet}`;
   document.getElementById("input-box").focus();
   closeSidebar();
+}
+
+function viewDocument(path) {
+  fetch(`/api/documents/${path}`)
+    .then(r => r.text())
+    .then(content => {
+      document.getElementById("doc-viewer-title").textContent = path.split("/").pop();
+      document.getElementById("doc-viewer-source").textContent = path;
+      document.getElementById("doc-viewer-content").textContent = content;
+      document.getElementById("doc-viewer-modal").classList.add("active");
+    })
+    .catch(() => {
+      window.open(`/api/documents/${path}`, "_blank");
+    });
+}
+
+function closeDocViewer() {
+  document.getElementById("doc-viewer-modal").classList.remove("active");
+}
+
+function exportCurrentChat() {
+  if (!sessionId) return;
+  window.open(`/api/sessions/${sessionId}/export`, "_blank");
+  closeSidebar();
+}
+
+function uploadAudio() {
+  document.getElementById("audio-modal").classList.add("active");
+  closeSidebar();
+}
+
+function closeAudioModal() {
+  document.getElementById("audio-modal").classList.remove("active");
+}
+
+function handleAudioSelect(event) {
+  const files = event.target.files;
+  if (files.length) uploadAudioFiles(files);
+}
+
+async function uploadAudioFiles(files) {
+  const progress = document.getElementById("audio-progress");
+  const status = document.getElementById("audio-status");
+  const fill = progress.querySelector(".progress-fill");
+  progress.style.display = "block";
+  fill.style.width = "0%";
+
+  for (const file of files) {
+    status.textContent = `Uploading ${file.name}...`;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload/audio", { method: "POST", body: formData });
+      const result = await res.json();
+      if (result.status === "uploaded") {
+        status.textContent = `Saved: ${file.name}`;
+        fill.style.width = "100%";
+      } else {
+        status.textContent = `Error: ${result.error || "Failed"}`;
+        fill.style.width = "0%";
+      }
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+      fill.style.width = "0%";
+    }
+  }
+
+  setTimeout(() => { progress.style.display = "none"; }, 3000);
 }
 
 // Sessions

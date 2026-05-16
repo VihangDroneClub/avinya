@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import queue
 import sys
@@ -14,12 +15,19 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Response
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger("avinya.web")
 
 from core.config import MODEL_DEFAULT, MODEL_REASONING, SESSION_MAX_TURNS, VAULT_PATH, CHROMA_PATH, COLLECTION_NAME
 from core.prompt_builder import build_full_prompt
@@ -62,16 +70,22 @@ def _check_auth(request: Request) -> bool:
 @app.on_event("startup")
 def startup() -> None:
     global _ready, _ollama_ok, _ollama_error_msg
+    logger.info("Starting Avinya Web...")
     try:
         initialise_system()
         _ready = True
+        logger.info("Knowledge base initialized")
     except Exception as e:
         _ollama_error_msg = str(e)
+        logger.error("Failed to initialize knowledge base: %s", e)
     try:
         check_ollama()
         _ollama_ok = True
+        logger.info("Ollama connected")
     except OllamaError as e:
         _ollama_error_msg = str(e)
+        logger.warning("Ollama not available: %s", e)
+    logger.info("Avinya Web ready: backend=%s, ollama=%s", _ready, _ollama_ok)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -432,6 +446,64 @@ def stats(request: Request) -> JSONResponse:
         "sessions": len(_sessions),
         "ollama": _ollama_ok,
         "ready": _ready,
+    })
+
+
+@app.get("/api/documents/{path:path}")
+def view_document(path: str, request: Request) -> FileResponse | JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    vault = Path(VAULT_PATH)
+    file_path = (vault / path).resolve()
+    if not str(file_path).startswith(str(vault.resolve())):
+        return JSONResponse({"error": "invalid path"}, status_code=400)
+    if not file_path.exists():
+        return JSONResponse({"error": "not found"}, status_code=404)
+    if file_path.suffix in (".md", ".txt", ".csv"):
+        return FileResponse(str(file_path), media_type="text/plain")
+    return FileResponse(str(file_path))
+
+
+@app.get("/api/sessions/{session_id}/export")
+def export_session(session_id: str, request: Request) -> Response:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    if session_id not in _sessions:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    s = _sessions[session_id]
+    lines = [f"# {s['title']}", f"Created: {s['created']}", f"Updated: {s['updated']}", ""]
+    summary = s["memory"].get_summary()
+    if summary:
+        lines.extend(["## Summary", "", summary, ""])
+    for m in s["messages"]:
+        role = "You" if m["role"] == "user" else "Avinya"
+        lines.extend([f"## {role}", "", m["content"], ""])
+    md = "\n".join(lines)
+    return Response(content=md, media_type="text/markdown", headers={
+        "Content-Disposition": f'attachment; filename="avinya_{session_id}.md"',
+    })
+
+
+@app.post("/api/upload/audio")
+async def upload_audio(request: Request, file: UploadFile = File(...)) -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    if not file.filename or not file.filename.lower().endswith((".wav", ".mp3", ".m4a", ".ogg", ".flac")):
+        return JSONResponse({"error": "unsupported audio format"}, status_code=400)
+    inbox = _ROOT / "vihang_data" / "inbox" / "audio"
+    inbox.mkdir(parents=True, exist_ok=True)
+    dest = inbox / file.filename
+    content = await file.read()
+    dest.write_bytes(content)
+    logger.info("Audio uploaded: %s (%d bytes)", file.filename, len(content))
+    return JSONResponse({
+        "status": "uploaded",
+        "file": file.filename,
+        "path": str(dest),
+        "note": "Audio files are stored for manual transcription. Add a text summary alongside for indexing.",
     })
 
 

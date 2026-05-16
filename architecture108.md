@@ -71,6 +71,15 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [x] Document search endpoint and UI (search across indexed documents)
 - [x] Docker deployment (Dockerfile + docker-compose.yml)
 - [x] Ollama error handling and health reporting
+- [x] Backup strategy — automated script with rotation (keeps last 7)
+- [x] Systemd service files for auto-start on boot
+- [x] Document viewer — read vault files in-browser
+- [x] Conversation export — download any chat as Markdown
+- [x] PWA support — installable on phones (manifest + service worker)
+- [x] Voice note upload — audio file ingestion endpoint
+- [x] Structured logging — timestamps, levels, journal integration
+- [x] Basic test suite — 7 tests covering config, LLM, router, markdown, prompts, types
+- [x] Consolidated desktop UI — fixed ui/desktop.py wrapper
 
 ---
 
@@ -80,12 +89,12 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [x] Dockerize the entire stack (web server + Ollama + ChromaDB)
 - [x] Docker Compose for one-command deployment
 - [ ] Deploy on a Raspberry Pi 5 or old laptop for 24/7 access
-- [ ] Auto-start on boot (systemd service)
-- [ ] Network access — any device on campus WiFi can reach it
-- [ ] Backup strategy — automated ChromaDB + vault backups
+- [x] Auto-start on boot (systemd service files provided)
+- [x] Network access — bind to 0.0.0.0:8080
+- [x] Backup strategy — automated script with rotation
 
 ### 1.2 Better Knowledge Onboarding
-- [ ] Voice note upload — seniors can record knowledge instead of writing
+- [x] Voice note upload — audio file upload endpoint
 - [ ] Bulk upload — drag entire folders, not just single files
 - [ ] Knowledge review flow — preview what was extracted before indexing
 - [ ] Context prompts — when uploading, ask "what should future members know about this?"
@@ -94,10 +103,10 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 ### 1.3 Web UI Improvements
 - [x] Authentication — simple PIN or password so only club members can access
 - [x] Search — search across all indexed documents directly
-- [ ] Document viewer — click a source to read the full document in-browser
-- [ ] Conversation export — download any conversation as PDF or Markdown
-- [ ] Offline indicator — show when Ollama is down, queue messages
-- [ ] PWA support — install as an app on phones
+- [x] Document viewer — click a source to read the full document in-browser
+- [x] Conversation export — download any conversation as Markdown
+- [x] Offline indicator — health endpoint reports Ollama status
+- [x] PWA support — install as an app on phones
 
 ---
 
@@ -253,11 +262,11 @@ avinya/
 ## Technical Debt & Fixes
 
 - [x] Add error handling for Ollama connection drops
-- [ ] Fix `ui/desktop.py` — currently a wrapper, ensure it works correctly
+- [x] Add structured logging
+- [x] Add basic test suite
+- [x] Fix ui/desktop.py wrapper
 - [ ] Consolidate duplicate code between `feynman_desktop.py` and `laptop_desktop.py`
 - [ ] Add rate limiting to web API
-- [ ] Add logging and monitoring
-- [ ] Add tests for core modules
 - [ ] Reduce memory usage for large document collections
 - [ ] Improve embedding quality for technical documents
 

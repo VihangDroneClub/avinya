@@ -1069,3 +1069,52 @@ body {
   color: var(--danger);
   border-color: var(--danger);
 }
+
+/* Search Action Buttons */
+.search-action-btn {
+  padding: 3px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.search-action-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Full-screen Modal */
+.modal-full .modal-content {
+  max-width: 900px;
+  max-height: 90vh;
+  width: 95%;
+}
+
+.modal-full-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.doc-viewer-body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.doc-viewer-body pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg-tertiary);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  margin: 0;
+}
