@@ -1,0 +1,26 @@
+# Avinya — local RAG + Ollama
+chromadb
+sentence-transformers
+rich
+requests
+numpy
+pypdf
+fastapi
+uvicorn
+pydantic
+PyYAML
+customtkinter>=5.2
+pillow>=10.0
+pyTelegramBotAPI>=4.16
+
+# Voice / Jarvis Mode
+faster-whisper
+vosk
+piper-tts
+sounddevice
+librosa
+openwakeword
+tflite-runtime
+
+# Optional tuning via env: see core/config.py
+# AVINYA_MODEL_DEFAULT, AVINYA_MODEL_REASONING, OLLAMA_GENERATE_URL, AVINYA_CHROMA_PATH, ...

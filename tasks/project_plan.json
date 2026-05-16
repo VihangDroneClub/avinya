@@ -1,0 +1,417 @@
+{
+  "project": "vihang-ai-system",
+  "version": "1.0",
+  "source": "Vihang AI Knowledge Automation System design v1.0",
+  "base_repo": "/home/pratik/avinya",
+  "summary": "File-based control plane for incremental implementation of document ingestion, RAG API, and Telegram automation on top of the existing Avinya codebase.",
+  "repo_reuse": {
+    "existing_components": [
+      "embeddings/embedder.py",
+      "retrieval.py",
+      "core/prompt_builder.py",
+      "core/session_ops.py",
+      "memory/session_memory.py",
+      "memory/summarizer.py",
+      "llm/ollama_adapter.py",
+      "llm/router.py",
+      "core/config.py",
+      "core/startup.py",
+      "ingest_documents.py",
+      "utils/chunking.py",
+      "utils/mmr.py",
+      "utils/token_manager.py",
+      "ui/desktop.py",
+      "cli/interface.py"
+    ],
+    "reuse_notes": [
+      "Keep the current Ollama + Chroma + embedding stack unless a task explicitly replaces it.",
+      "Treat the current CLI and desktop app as the reference behavior for memory, prompting, and retrieval.",
+      "Use the existing markdown-based CKB ingestion flow as the baseline for the new vault/index pipeline."
+    ]
+  },
+  "milestones": [
+    {
+      "name": "Control plane",
+      "done_when": [
+        "A durable plan file exists",
+        "Task status can be updated without chat context",
+        "Gemini has clear execution prompts"
+      ]
+    },
+    {
+      "name": "Document pipeline",
+      "done_when": [
+        "PDF, DOCX, and XLSX inputs convert into structured markdown",
+        "Converted output is archived and indexed",
+        "Failures are logged and isolated"
+      ]
+    },
+    {
+      "name": "RAG service",
+      "done_when": [
+        "FastAPI exposes query, reindex, and health endpoints",
+        "Responses include sources and timing",
+        "Existing retrieval logic is reused or wrapped cleanly"
+      ]
+    },
+    {
+      "name": "Telegram interface",
+      "done_when": [
+        "Files can be uploaded through Telegram",
+        "Natural-language queries return knowledge-base answers",
+        "Admin commands cover health and reindex"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T001",
+      "phase": "Phase 0",
+      "title": "Write durable control-plane docs",
+      "scope": "Create the markdown master plan, status file, and worklog that Gemini can read after session loss.",
+      "inputs": [
+        "Vihang system design v1.0",
+        "current /home/pratik/avinya repository structure"
+      ],
+      "outputs": [
+        "tasks/project_plan.json",
+        "tasks/PROJECT_PLAN.md",
+        "tasks/STATUS.md",
+        "tasks/WORKLOG.md"
+      ],
+      "dependencies": [],
+      "reuse_from_repo": [
+        "existing repository documentation style",
+        "current Avinya architecture"
+      ],
+      "new_files": [
+        "tasks/project_plan.json",
+        "tasks/PROJECT_PLAN.md",
+        "tasks/STATUS.md",
+        "tasks/WORKLOG.md"
+      ],
+      "verification": [
+        "Files exist and are readable",
+        "Task graph lists the current repo reuse points",
+        "Markdown instructions are clear enough for Gemini to execute without chat history"
+      ],
+      "estimated_hours": 1
+    },
+    {
+      "id": "T002",
+      "phase": "Phase 1",
+      "title": "Define converter interfaces and file routing",
+      "scope": "Add a base converter contract and a factory that selects PDF/DOCX/XLSX handlers.",
+      "inputs": [
+        "document formats: PDF, DOCX, XLSX",
+        "desired markdown output contract"
+      ],
+      "outputs": [
+        "converters/base_converter.py",
+        "converters/converter_factory.py"
+      ],
+      "dependencies": [
+        "T001"
+      ],
+      "reuse_from_repo": [
+        "utils/chunking.py for downstream text segmentation patterns"
+      ],
+      "new_files": [
+        "converters/base_converter.py",
+        "converters/converter_factory.py"
+      ],
+      "verification": [
+        "Factory returns the expected converter type per extension",
+        "Unsupported files fail loudly and predictably"
+      ],
+      "estimated_hours": 2
+    },
+    {
+      "id": "T003",
+      "phase": "Phase 1",
+      "title": "Implement PDF conversion path",
+      "scope": "Convert PDF documents into structured markdown with metadata and fallback handling.",
+      "inputs": [
+        "PDF files from inbox or Telegram"
+      ],
+      "outputs": [
+        "converters/pdf_converter.py",
+        "tests/test_converters.py"
+      ],
+      "dependencies": [
+        "T002"
+      ],
+      "reuse_from_repo": [
+        "markdown chunking concepts from ingest_documents.py",
+        "existing token and retrieval limits"
+      ],
+      "new_files": [
+        "converters/pdf_converter.py",
+        "tests/test_converters.py"
+      ],
+      "verification": [
+        "Text-only PDF converts successfully",
+        "Corrupted or password-protected PDFs are rejected cleanly",
+        "Metadata includes source file and conversion method"
+      ],
+      "estimated_hours": 3
+    },
+    {
+      "id": "T004",
+      "phase": "Phase 1",
+      "title": "Implement DOCX and XLSX conversion paths",
+      "scope": "Convert office documents into structured markdown tables and sections.",
+      "inputs": [
+        "DOCX and XLSX files"
+      ],
+      "outputs": [
+        "converters/docx_converter.py",
+        "converters/xlsx_converter.py",
+        "tests/test_converters.py"
+      ],
+      "dependencies": [
+        "T002"
+      ],
+      "reuse_from_repo": [
+        "existing markdown and retrieval pipeline assumptions"
+      ],
+      "new_files": [
+        "converters/docx_converter.py",
+        "converters/xlsx_converter.py",
+        "tests/test_converters.py"
+      ],
+      "verification": [
+        "Multi-section DOCX preserves headings and paragraphs",
+        "Multi-sheet XLSX produces readable markdown tables",
+        "Empty or invalid office files fail safely"
+      ],
+      "estimated_hours": 3
+    },
+    {
+      "id": "T005",
+      "phase": "Phase 2",
+      "title": "Build inbox watcher and processor",
+      "scope": "Watch the inbox directory, process new files, archive originals, and write markdown to the vault.",
+      "inputs": [
+        "converted file handlers",
+        "~/vihang_data/inbox",
+        "~/vihang_data/vault",
+        "~/vihang_data/archive"
+      ],
+      "outputs": [
+        "processors/watcher.py",
+        "processors/archiver.py",
+        "scripts/process_file.py"
+      ],
+      "dependencies": [
+        "T003",
+        "T004"
+      ],
+      "reuse_from_repo": [
+        "core/startup.py initialization style",
+        "ingest_documents.py indexing conventions"
+      ],
+      "new_files": [
+        "processors/watcher.py",
+        "processors/archiver.py",
+        "scripts/process_file.py"
+      ],
+      "verification": [
+        "Dropping a supported file into inbox triggers processing",
+        "Original files are archived after successful conversion",
+        "Processing failures do not delete source inputs"
+      ],
+      "estimated_hours": 4
+    },
+    {
+      "id": "T006",
+      "phase": "Phase 2",
+      "title": "Add categorization and markdown formatting",
+      "scope": "Classify documents into categories and emit standardized markdown with frontmatter.",
+      "inputs": [
+        "converted text plus file metadata",
+        "category rules"
+      ],
+      "outputs": [
+        "processors/categorizer.py",
+        "processors/formatter.py",
+        "config/category_rules.yaml"
+      ],
+      "dependencies": [
+        "T005"
+      ],
+      "reuse_from_repo": [
+        "prompts/system_prompt.py for factual discipline",
+        "retrieval.py metadata conventions"
+      ],
+      "new_files": [
+        "processors/categorizer.py",
+        "processors/formatter.py",
+        "config/category_rules.yaml"
+      ],
+      "verification": [
+        "Filename and content rules map to expected categories",
+        "Markdown frontmatter includes title, source, category, and timestamps"
+      ],
+      "estimated_hours": 3
+    },
+    {
+      "id": "T007",
+      "phase": "Phase 3",
+      "title": "Expose RAG service behind FastAPI",
+      "scope": "Wrap existing retrieval and generation logic in HTTP endpoints for query, reindex, health, and stats.",
+      "inputs": [
+        "current retrieval.py",
+        "current Ollama adapter",
+        "current Chroma collection"
+      ],
+      "outputs": [
+        "rag/api.py",
+        "rag/indexer.py",
+        "rag/retriever.py"
+      ],
+      "dependencies": [
+        "T005",
+        "T006"
+      ],
+      "reuse_from_repo": [
+        "retrieval.py",
+        "embeddings/embedder.py",
+        "llm/ollama_adapter.py",
+        "core/config.py"
+      ],
+      "new_files": [
+        "rag/api.py",
+        "rag/indexer.py",
+        "rag/retriever.py"
+      ],
+      "verification": [
+        "POST /query returns answer, sources, and latency",
+        "POST /reindex rebuilds the collection",
+        "GET /health reports backend status"
+      ],
+      "estimated_hours": 4
+    },
+    {
+      "id": "T008",
+      "phase": "Phase 3",
+      "title": "Add query filtering and reranking",
+      "scope": "Support metadata filters and optional reranking on retrieved chunks.",
+      "inputs": [
+        "query text",
+        "category/date filters"
+      ],
+      "outputs": [
+        "rag/reranker.py",
+        "tests/test_rag.py"
+      ],
+      "dependencies": [
+        "T007"
+      ],
+      "reuse_from_repo": [
+        "utils/mmr.py",
+        "retrieval.py distance and token-budget logic"
+      ],
+      "new_files": [
+        "rag/reranker.py",
+        "tests/test_rag.py"
+      ],
+      "verification": [
+        "Category filters narrow results",
+        "Reranking preserves relevance without losing source traceability"
+      ],
+      "estimated_hours": 3
+    },
+    {
+      "id": "T009",
+      "phase": "Phase 4",
+      "title": "Define Telegram bot integration surface",
+      "scope": "Implement bot command handling, file upload intake, and query routing to the RAG service.",
+      "inputs": [
+        "Telegram bot token",
+        "RAG API endpoint"
+      ],
+      "outputs": [
+        "telegram/bot.py",
+        "telegram/commands.py"
+      ],
+      "dependencies": [
+        "T007",
+        "T008"
+      ],
+      "reuse_from_repo": [
+        "llm/router.py intent selection ideas",
+        "core/session_ops.py memory behavior"
+      ],
+      "new_files": [
+        "telegram/bot.py",
+        "telegram/commands.py"
+      ],
+      "verification": [
+        "Bot receives file uploads",
+        "Bot forwards questions to query endpoint",
+        "Admin commands return health and reindex responses"
+      ],
+      "estimated_hours": 4
+    },
+    {
+      "id": "T010",
+      "phase": "Phase 5",
+      "title": "Write handover and operations docs",
+      "scope": "Document setup, service startup, troubleshooting, and maintenance for a future captain.",
+      "inputs": [
+        "implemented codebase",
+        "runtime commands",
+        "operational assumptions"
+      ],
+      "outputs": [
+        "docs/HANDOVER.md",
+        "docs/API_REFERENCE.md",
+        "docs/TROUBLESHOOTING.md"
+      ],
+      "dependencies": [
+        "T001",
+        "T005",
+        "T007",
+        "T009"
+      ],
+      "reuse_from_repo": [
+        "existing README-style explanation patterns in code comments and prompts"
+      ],
+      "new_files": [
+        "docs/HANDOVER.md",
+        "docs/API_REFERENCE.md",
+        "docs/TROUBLESHOOTING.md"
+      ],
+      "verification": [
+        "A new maintainer can bootstrap the system from docs alone",
+        "Operational commands are listed with expected outputs",
+        "Recovery steps cover index rebuild and service restart"
+      ],
+      "estimated_hours": 3
+    }
+  ],
+  "critical_path": [
+    "T001",
+    "T002",
+    "T003",
+    "T004",
+    "T005",
+    "T006",
+    "T007",
+    "T009",
+    "T010"
+  ],
+  "risks": [
+    "PDF conversion quality may vary by library and document complexity.",
+    "The current repo already contains a local RAG stack, so duplicating it would waste time and create drift.",
+    "Telegram integration introduces credentials and uptime concerns that should stay isolated from core ingestion code.",
+    "The RTX 3050 may require quantized or CPU-backed inference for stable 24/7 operation."
+  ],
+  "execution_notes": [
+    "Gemini should update tasks/STATUS.md after each completed task.",
+    "Gemini should append decision records to tasks/WORKLOG.md when changing architecture or dependencies.",
+    "Use the existing Avinya modules as reference implementation before adding new code paths.",
+    "Prefer wrapper modules over rewriting working retrieval and memory logic."
+  ]
+}

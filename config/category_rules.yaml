@@ -1,0 +1,28 @@
+categories:
+  reports:
+    priority: 1
+    keywords:
+      filename: ["report", "annual", "progress", "summary"]
+      content: ["quarterly", "achievements", "overview"]
+  accounts:
+    priority: 2
+    keywords:
+      filename: ["budget", "expense", "financial", "invoice"]
+      content: ["₹", "rupees", "cost", "expenditure"]
+  projects:
+    priority: 3
+    keywords:
+      filename: ["project", "drone", "agribot", "surveillance"]
+      content: ["specifications", "timeline", "deliverables"]
+  meetings:
+    priority: 4
+    keywords:
+      filename: ["meeting", "minutes", "mom", "agenda"]
+      content: ["attendees", "action items", "discussed"]
+  technical:
+    priority: 5
+    keywords:
+      filename: ["manual", "datasheet", "specs", "technical"]
+      content: ["datasheet", "parameters", "specifications"]
+default_category: technical
+
