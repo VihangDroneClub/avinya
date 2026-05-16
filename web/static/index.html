@@ -7,8 +7,23 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div id="app">
-  <!-- Sidebar (desktop) / Drawer (mobile) -->
+
+<!-- Auth Screen -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">A</div>
+    <h1>Avinya</h1>
+    <p class="auth-subtitle">The member who never graduates</p>
+    <form id="auth-form" onsubmit="return handleAuth(event)">
+      <input type="password" id="auth-pin" placeholder="Enter club PIN" autocomplete="off" autofocus>
+      <button type="submit" id="auth-btn">Enter</button>
+    </form>
+    <p id="auth-error" class="auth-error" style="display:none">Incorrect PIN</p>
+  </div>
+</div>
+
+<!-- Main App (hidden until authenticated) -->
+<div id="app" style="display:none">
   <aside id="sidebar">
     <div class="sidebar-header">
       <div class="brand">
@@ -33,6 +48,15 @@
     </div>
 
     <div class="sidebar-section">
+      <h3>Search Knowledge</h3>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search documents..." onkeydown="if(event.key==='Enter')searchDocs()">
+        <button class="search-btn" onclick="searchDocs()">Search</button>
+      </div>
+      <div id="search-results" class="search-results"></div>
+    </div>
+
+    <div class="sidebar-section">
       <h3>Knowledge</h3>
       <div id="knowledge-list" class="knowledge-list">
         <p class="muted">Loading...</p>
@@ -47,15 +71,13 @@
 
     <div class="sidebar-footer">
       <div id="status-indicator" class="status-chip loading">Connecting...</div>
+      <button class="btn-logout" onclick="handleLogout()">Logout</button>
     </div>
   </aside>
 
-  <!-- Overlay for mobile sidebar -->
   <div id="sidebar-overlay" class="overlay"></div>
 
-  <!-- Main content -->
   <main id="main">
-    <!-- Header -->
     <header id="header">
       <button id="menu-btn" class="icon-btn" title="Menu">&#9776;</button>
       <div class="header-title">
@@ -68,12 +90,10 @@
       </div>
     </header>
 
-    <!-- Chat area -->
     <div id="chat-container">
       <div id="chat-messages"></div>
     </div>
 
-    <!-- Quick prompts -->
     <div id="quick-prompts">
       <button class="quick-btn" onclick="sendQuick('What is Vihang Drone Club?')">About the club</button>
       <button class="quick-btn" onclick="sendQuick('What are the current projects?')">Projects</button>
@@ -81,7 +101,6 @@
       <button class="quick-btn" onclick="sendQuick('What are the club rules and traditions?')">Rules & traditions</button>
     </div>
 
-    <!-- Composer -->
     <div id="composer">
       <textarea id="input-box" placeholder="Ask Avinya about the club..." rows="1"></textarea>
       <button id="send-btn" onclick="sendMessage()">

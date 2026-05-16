@@ -4,25 +4,94 @@ let sessionId = generateId();
 let isStreaming = false;
 let currentStreamText = "";
 let theme = localStorage.getItem("avinya-theme") || "dark";
+let authenticated = false;
 
 document.documentElement.setAttribute("data-theme", theme);
 
 // Init
 document.addEventListener("DOMContentLoaded", () => {
-  checkHealth();
-  loadSessions();
-  loadKnowledge();
+  checkAuth();
   setupInput();
   setupDragDrop();
-  showWelcome();
 });
 
 function generateId() {
   return Math.random().toString(36).substring(2, 10);
 }
 
+// Auth
+async function checkAuth() {
+  try {
+    const res = await fetch("/api/auth/check", { method: "POST" });
+    const data = await res.json();
+    if (data.authenticated) {
+      authenticated = true;
+      document.getElementById("auth-screen").style.display = "none";
+      document.getElementById("app").style.display = "flex";
+      initApp();
+    }
+  } catch {
+    // Not authenticated, show auth screen
+  }
+}
+
+async function handleAuth(event) {
+  event.preventDefault();
+  const pin = document.getElementById("auth-pin").value;
+  const errorEl = document.getElementById("auth-error");
+  const btn = document.getElementById("auth-btn");
+
+  btn.textContent = "...";
+  btn.disabled = true;
+  errorEl.style.display = "none";
+
+  try {
+    const res = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin }),
+    });
+
+    if (res.ok) {
+      authenticated = true;
+      document.getElementById("auth-screen").style.display = "none";
+      document.getElementById("app").style.display = "flex";
+      initApp();
+    } else {
+      errorEl.style.display = "block";
+      document.getElementById("auth-pin").value = "";
+      document.getElementById("auth-pin").focus();
+    }
+  } catch {
+    errorEl.textContent = "Connection error";
+    errorEl.style.display = "block";
+  }
+
+  btn.textContent = "Enter";
+  btn.disabled = false;
+  return false;
+}
+
+async function handleLogout() {
+  await fetch("/api/auth/logout", { method: "POST" });
+  authenticated = false;
+  document.getElementById("auth-screen").style.display = "flex";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("auth-pin").value = "";
+  document.getElementById("auth-pin").focus();
+  closeSidebar();
+}
+
+function initApp() {
+  checkHealth();
+  loadSessions();
+  loadKnowledge();
+  showWelcome();
+}
+
 // Health check
 async function checkHealth() {
+  if (!authenticated) return;
   const indicator = document.getElementById("status-indicator");
   try {
     const res = await fetch("/api/health");
@@ -38,6 +107,47 @@ async function checkHealth() {
     indicator.className = "status-chip error";
     indicator.textContent = "Offline";
   }
+}
+
+// Search
+async function searchDocs() {
+  if (!authenticated) return;
+  const input = document.getElementById("search-input");
+  const query = input.value.trim();
+  if (!query) return;
+
+  const resultsEl = document.getElementById("search-results");
+  resultsEl.innerHTML = '<p class="muted">Searching...</p>';
+
+  try {
+    const res = await fetch("/api/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, limit: 10 }),
+    });
+    const data = await res.json();
+
+    if (!data.results || !data.results.length) {
+      resultsEl.innerHTML = '<p class="muted">No results found</p>';
+      return;
+    }
+
+    resultsEl.innerHTML = data.results.map(r => `
+      <div class="search-result-item" onclick="useSearchResult('${escapeHtml(r.source)}', '${escapeHtml(r.content.substring(0, 100))}')">
+        <span class="sr-score">${r.score.toFixed(2)}</span>
+        <div class="sr-source">${escapeHtml(r.source)}</div>
+        <div class="sr-content">${escapeHtml(r.content)}</div>
+      </div>
+    `).join("");
+  } catch {
+    resultsEl.innerHTML = '<p class="muted">Search failed</p>';
+  }
+}
+
+function useSearchResult(source, snippet) {
+  document.getElementById("input-box").value = `What does ${source} say about this: ${snippet}`;
+  document.getElementById("input-box").focus();
+  closeSidebar();
 }
 
 // Sessions

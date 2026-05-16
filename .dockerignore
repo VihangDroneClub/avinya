@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.github/
+venv/
+.env
+*.egg-info/
+dist/
+build/
+chroma_db/
+vihang_data/
+avinya_preview.html
+*.md
+!README.md
+!architecture108.md

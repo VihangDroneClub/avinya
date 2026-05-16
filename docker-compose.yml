@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: avinya-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  avinya:
+    build: .
+    container_name: avinya-web
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_URL=http://ollama:11434/api/generate
+      - AVINYA_WEB_PIN=vihang2026
+      - AVINYA_CHROMA_PATH=/app/chroma_db
+      - AVINYA_VAULT_PATH=/app/vihang_data/vault
+    volumes:
+      - avinya_data:/app/vihang_data
+      - avinya_chroma:/app/chroma_db
+      - ./knowledge_base:/app/knowledge_base:ro
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  avinya_data:
+  avinya_chroma:
