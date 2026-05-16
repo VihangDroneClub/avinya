@@ -1118,3 +1118,26 @@ body {
   border-radius: var(--radius-sm);
   margin: 0;
 }
+
+.bulk-queue {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+#bulk-queue-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+#graph-canvas {
+  display: block;
+}
+
+#graph-empty {
+  color: var(--text-muted);
+}

@@ -738,3 +738,353 @@ function scrollToBottom() {
   const container = document.getElementById("chat-container");
   container.scrollTop = container.scrollHeight;
 }
+
+// Bulk folder upload
+let bulkFiles = [];
+
+function uploadBulk() {
+  bulkFiles = [];
+  document.getElementById("bulk-queue").style.display = "none";
+  document.getElementById("bulk-progress").style.display = "none";
+  document.getElementById("bulk-modal").classList.add("active");
+  closeSidebar();
+  setupBulkDragDrop();
+}
+
+function closeBulkModal() {
+  document.getElementById("bulk-modal").classList.remove("active");
+}
+
+function setupBulkDragDrop() {
+  const dropZone = document.getElementById("bulk-drop-zone");
+  if (!dropZone) return;
+
+  ["dragenter", "dragover"].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+  });
+
+  ["dragleave", "drop"].forEach(evt => {
+    dropZone.addEventListener(evt, () => {
+      dropZone.classList.remove("dragover");
+    });
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const items = e.dataTransfer.items;
+    if (items) {
+      const filePromises = [];
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry?.();
+        if (entry) {
+          filePromises.push(readEntry(entry));
+        }
+      }
+      Promise.all(filePromises).then(results => {
+        bulkFiles = results.flat();
+        if (bulkFiles.length) {
+          document.getElementById("bulk-queue-count").textContent = `${bulkFiles.length} files queued`;
+          document.getElementById("bulk-queue").style.display = "block";
+        }
+      });
+    } else if (e.dataTransfer.files.length) {
+      bulkFiles = Array.from(e.dataTransfer.files);
+      document.getElementById("bulk-queue-count").textContent = `${bulkFiles.length} files queued`;
+      document.getElementById("bulk-queue").style.display = "block";
+    }
+  });
+}
+
+function readEntry(entry) {
+  return new Promise((resolve) => {
+    if (entry.isFile) {
+      entry.file(file => resolve([file]));
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const allFiles = [];
+      const readBatch = () => {
+        reader.readEntries(entries => {
+          if (entries.length === 0) {
+            Promise.all(allFiles).then(resolve);
+          } else {
+            for (const e of entries) {
+              allFiles.push(readEntry(e));
+            }
+            readBatch();
+          }
+        });
+      };
+      readBatch();
+    } else {
+      resolve([]);
+    }
+  });
+}
+
+function handleBulkFileSelect(event) {
+  bulkFiles = Array.from(event.target.files);
+  if (bulkFiles.length) {
+    document.getElementById("bulk-queue-count").textContent = `${bulkFiles.length} files queued`;
+    document.getElementById("bulk-queue").style.display = "block";
+  }
+}
+
+async function startBulkUpload() {
+  const progress = document.getElementById("bulk-progress");
+  const status = document.getElementById("bulk-status");
+  const fill = progress.querySelector(".progress-fill");
+  progress.style.display = "block";
+  document.getElementById("bulk-queue").style.display = "none";
+  fill.style.width = "0%";
+
+  const formData = new FormData();
+  for (const file of bulkFiles) {
+    formData.append("files", file);
+  }
+
+  status.textContent = `Uploading ${bulkFiles.length} files...`;
+  try {
+    const res = await fetch("/api/upload/bulk", { method: "POST", body: formData });
+    const result = await res.json();
+    status.textContent = `Done: ${result.success} succeeded, ${result.failed} failed`;
+    fill.style.width = "100%";
+    loadKnowledge();
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+    fill.style.width = "0%";
+  }
+
+  setTimeout(() => { progress.style.display = "none"; }, 3000);
+}
+
+// Image upload
+function uploadImage() {
+  document.getElementById("image-description").value = "";
+  document.getElementById("image-progress").style.display = "none";
+  document.getElementById("image-modal").classList.add("active");
+  closeSidebar();
+  setupImageDragDrop();
+}
+
+function closeImageModal() {
+  document.getElementById("image-modal").classList.remove("active");
+}
+
+function setupImageDragDrop() {
+  const dropZone = document.getElementById("image-drop-zone");
+  if (!dropZone) return;
+
+  ["dragenter", "dragover"].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+  });
+
+  ["dragleave", "drop"].forEach(evt => {
+    dropZone.addEventListener(evt, () => {
+      dropZone.classList.remove("dragover");
+    });
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length) uploadImageFiles(files);
+  });
+}
+
+function handleImageSelect(event) {
+  const files = event.target.files;
+  if (files.length) uploadImageFiles(files);
+}
+
+async function uploadImageFiles(files) {
+  const progress = document.getElementById("image-progress");
+  const status = document.getElementById("image-status");
+  const fill = progress.querySelector(".progress-fill");
+  const description = document.getElementById("image-description").value;
+  progress.style.display = "block";
+  fill.style.width = "0%";
+
+  for (const file of files) {
+    status.textContent = `Uploading ${file.name}...`;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (description) formData.append("description", description);
+      const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+      const result = await res.json();
+      if (result.status === "uploaded") {
+        status.textContent = `Saved: ${file.name}`;
+        fill.style.width = "100%";
+        loadKnowledge();
+      } else {
+        status.textContent = `Error: ${result.error || "Failed"}`;
+        fill.style.width = "0%";
+      }
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+      fill.style.width = "0%";
+    }
+  }
+
+  setTimeout(() => { progress.style.display = "none"; }, 3000);
+}
+
+// Meeting note capture
+function captureMeeting() {
+  document.getElementById("meeting-title").value = "";
+  document.getElementById("meeting-attendees").value = "";
+  document.getElementById("meeting-notes").value = "";
+  document.getElementById("meeting-result").style.display = "none";
+  document.getElementById("meeting-modal").classList.add("active");
+  closeSidebar();
+}
+
+function closeMeetingModal() {
+  document.getElementById("meeting-modal").classList.remove("active");
+}
+
+async function submitMeeting() {
+  const title = document.getElementById("meeting-title").value.trim() || "Untitled Meeting";
+  const attendeesRaw = document.getElementById("meeting-attendees").value.trim();
+  const notes = document.getElementById("meeting-notes").value.trim();
+  const attendees = attendeesRaw ? attendeesRaw.split(",").map(a => a.trim()).filter(Boolean) : [];
+
+  if (!notes) {
+    alert("Please enter meeting notes");
+    return;
+  }
+
+  const resultDiv = document.getElementById("meeting-result");
+  const summaryDiv = document.getElementById("meeting-summary");
+  resultDiv.style.display = "block";
+  summaryDiv.innerHTML = '<p class="muted">Processing meeting notes...</p>';
+
+  try {
+    const res = await fetch("/api/meeting", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, attendees, notes }),
+    });
+    const data = await res.json();
+    if (data.status === "captured") {
+      summaryDiv.innerHTML = `<div style="margin-bottom:8px"><strong>Saved as:</strong> ${escapeHtml(data.filename)}</div><div style="white-space:pre-wrap">${renderMarkdown(data.summary)}</div>`;
+    } else {
+      summaryDiv.innerHTML = `<p style="color:var(--danger)">Error: ${escapeHtml(data.error || "Failed")}</p>`;
+    }
+  } catch (err) {
+    summaryDiv.innerHTML = `<p style="color:var(--danger)">Connection error: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+// Knowledge graph
+let graphData = null;
+
+function showGraph() {
+  document.getElementById("graph-modal").classList.add("active");
+  closeSidebar();
+  loadGraph();
+}
+
+function closeGraph() {
+  document.getElementById("graph-modal").classList.remove("active");
+}
+
+async function loadGraph() {
+  try {
+    const res = await fetch("/api/graph");
+    const data = await res.json();
+    graphData = data;
+    const emptyEl = document.getElementById("graph-empty");
+    const reportEl = document.getElementById("graph-report");
+
+    if (data.nodes && data.nodes.length > 0) {
+      emptyEl.style.display = "none";
+      drawGraph(data.nodes, data.edges || []);
+      if (data.report) {
+        reportEl.style.display = "block";
+        reportEl.innerHTML = renderMarkdown(data.report);
+      } else {
+        reportEl.style.display = "none";
+      }
+    } else {
+      emptyEl.style.display = "block";
+      reportEl.style.display = "none";
+    }
+  } catch {
+    document.getElementById("graph-empty").style.display = "block";
+  }
+}
+
+function drawGraph(nodes, edges) {
+  const canvas = document.getElementById("graph-canvas");
+  const container = document.getElementById("graph-canvas-container");
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+  const ctx = canvas.getContext("2d");
+
+  const nodeMap = {};
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const radius = Math.min(canvas.width, canvas.height) * 0.35;
+
+  nodes.forEach((node, i) => {
+    const angle = (2 * Math.PI * i) / nodes.length;
+    node.x = centerX + radius * Math.cos(angle);
+    node.y = centerY + radius * Math.sin(angle);
+    nodeMap[node.id || node.label] = node;
+  });
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  edges.forEach(edge => {
+    const source = nodeMap[edge.source];
+    const target = nodeMap[edge.target];
+    if (source && target) {
+      ctx.beginPath();
+      ctx.moveTo(source.x, source.y);
+      ctx.lineTo(target.x, target.y);
+      ctx.strokeStyle = "rgba(255, 122, 26, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
+
+  nodes.forEach(node => {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = "#ff7a1a";
+    ctx.fill();
+
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text").trim() || "#f0f0f0";
+    ctx.font = "11px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(node.label || node.id, node.x, node.y - 12);
+  });
+}
+
+async function generateGraph() {
+  const btn = document.getElementById("generate-graph-btn");
+  btn.textContent = "Generating...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch("/api/graph/generate", { method: "POST" });
+    const data = await res.json();
+    if (data.status === "completed") {
+      await loadGraph();
+    } else {
+      alert("Graph generation failed: " + (data.error || data.stderr?.slice(-200)));
+    }
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+
+  btn.textContent = "Generate";
+  btn.disabled = false;
+}

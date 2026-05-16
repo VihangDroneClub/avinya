@@ -80,6 +80,11 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [x] Structured logging — timestamps, levels, journal integration
 - [x] Basic test suite — 7 tests covering config, LLM, router, markdown, prompts, types
 - [x] Consolidated desktop UI — fixed ui/desktop.py wrapper
+- [x] Bulk folder upload — drag entire folders or select multiple files at once
+- [x] Knowledge graph — graph generation, API endpoint, visual browser in web UI
+- [x] Image/schematic support — upload images with descriptions, indexed into vault
+- [x] Meeting note capture — record meetings, auto-summarize, extract action items
+- [x] Rate limiting — configurable rate limiter middleware on web API
 
 ---
 
@@ -95,7 +100,7 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 
 ### 1.2 Better Knowledge Onboarding
 - [x] Voice note upload — audio file upload endpoint
-- [ ] Bulk upload — drag entire folders, not just single files
+- [x] Bulk upload — drag entire folders, not just single files
 - [ ] Knowledge review flow — preview what was extracted before indexing
 - [ ] Context prompts — when uploading, ask "what should future members know about this?"
 - [ ] Tagging system — categorize documents (project, budget, meeting, technical, tutorial)
@@ -113,9 +118,9 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 ## Phase 2: Make It Smart
 
 ### 2.1 Knowledge Graph
-- [ ] Extract entities from documents (people, projects, dates, decisions)
-- [ ] Build a graph of relationships between documents and topics
-- [ ] Visual knowledge graph browser
+- [x] Extract entities from documents (people, projects, dates, decisions)
+- [x] Build a graph of relationships between documents and topics
+- [x] Visual knowledge graph browser
 - [ ] "Related documents" suggestions in chat responses
 
 ### 2.2 Proactive Knowledge
@@ -125,7 +130,7 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [ ] Alerts seniors: "3 people asked about X but we have no docs on it"
 
 ### 2.3 Better Responses
-- [ ] Image support — show diagrams, circuit schematics, photos from documents
+- [x] Image support — show diagrams, circuit schematics, photos from documents
 - [ ] Table rendering — display tabular data from spreadsheets properly
 - [ ] Citation linking — click a citation to jump to the exact passage
 - [ ] Response confidence — show how certain Avinya is about an answer
@@ -136,7 +141,7 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 ## Phase 3: Make It Indispensable
 
 ### 3.1 Club Operations
-- [ ] Meeting note capture — record meetings, auto-summarize, extract action items
+- [x] Meeting note capture — record meetings, auto-summarize, extract action items
 - [ ] Project tracker — track project status, blockers, and milestones
 - [ ] Inventory management — know what parts the club has and where
 - [ ] Event calendar — competitions, build sessions, flight days
@@ -265,8 +270,8 @@ avinya/
 - [x] Add structured logging
 - [x] Add basic test suite
 - [x] Fix ui/desktop.py wrapper
+- [x] Add rate limiting to web API
 - [ ] Consolidate duplicate code between `feynman_desktop.py` and `laptop_desktop.py`
-- [ ] Add rate limiting to web API
 - [ ] Reduce memory usage for large document collections
 - [ ] Improve embedding quality for technical documents
 

@@ -17,6 +17,10 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Response
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from collections import defaultdict
+import time
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -42,6 +46,34 @@ from rag.indexer import reindex_vault, collection
 from prompts.system_prompt import SYSTEM_PROMPT
 
 app = FastAPI(title="Avinya Web", version="2.0")
+
+RATE_LIMIT_REQUESTS = int(os.environ.get("AVINYA_RATE_LIMIT", "60"))
+RATE_LIMIT_WINDOW = int(os.environ.get("AVINYA_RATE_LIMIT_WINDOW", "60"))
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, max_requests: int = 60, window_seconds: int = 60):
+        super().__init__(app)
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.clients: dict[str, list[float]] = defaultdict(list)
+
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        window_start = now - self.window_seconds
+        self.clients[client_ip] = [t for t in self.clients[client_ip] if t > window_start]
+        if len(self.clients[client_ip]) >= self.max_requests:
+            return JSONResponse(
+                {"error": "rate limit exceeded", "retry_after": int(self.window_seconds - (now - self.clients[client_ip][0]))},
+                status_code=429,
+            )
+        self.clients[client_ip].append(now)
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(self.max_requests)
+        response.headers["X-RateLimit-Remaining"] = str(self.max_requests - len(self.clients[client_ip]))
+        return response
+
+app.add_middleware(RateLimitMiddleware, max_requests=RATE_LIMIT_REQUESTS, window_seconds=RATE_LIMIT_WINDOW)
 
 static_dir = _ROOT / "web" / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
@@ -410,6 +442,40 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> JSONRes
         return JSONResponse({"error": str(exc)}, status_code=500)
 
 
+@app.post("/api/upload/bulk")
+async def upload_bulk(request: Request, files: list[UploadFile] = File(...)) -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+
+    inbox = _ROOT / "vihang_data" / "inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    results = []
+    errors = []
+    for file in files:
+        try:
+            dest = inbox / file.filename
+            content = await file.read()
+            dest.write_bytes(content)
+            result = reindex_vault(VAULT_PATH, files=[str(dest)])
+            results.append({
+                "file": file.filename,
+                "indexed": result.files_indexed,
+                "chunks": result.chunks_created,
+            })
+        except Exception as exc:
+            errors.append({"file": file.filename, "error": str(exc)})
+
+    return JSONResponse({
+        "status": "bulk_upload_complete",
+        "total": len(files),
+        "success": len(results),
+        "failed": len(errors),
+        "results": results,
+        "errors": errors,
+    })
+
+
 @app.get("/api/knowledge")
 def list_knowledge(request: Request) -> JSONResponse:
     auth_err = _require_auth(request)
@@ -505,6 +571,195 @@ async def upload_audio(request: Request, file: UploadFile = File(...)) -> JSONRe
         "path": str(dest),
         "note": "Audio files are stored for manual transcription. Add a text summary alongside for indexing.",
     })
+
+
+@app.post("/api/upload/image")
+async def upload_image(request: Request, file: UploadFile = File(...), description: str = "") -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    if not file.filename or not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg")):
+        return JSONResponse({"error": "unsupported image format"}, status_code=400)
+    images_dir = _ROOT / "vihang_data" / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    dest = images_dir / file.filename
+    content = await file.read()
+    dest.write_bytes(content)
+    if description.strip():
+        md_content = f"""---
+source: {file.filename}
+category: image
+uploaded: {datetime.now().isoformat()}
+---
+
+# Image: {file.filename}
+
+{description.strip()}
+
+![{file.filename}](/api/images/{file.filename})
+"""
+        vault = Path(VAULT_PATH) / "images"
+        vault.mkdir(parents=True, exist_ok=True)
+        (vault / f"{file.filename}.md").write_text(md_content, encoding="utf-8")
+        try:
+            reindex_vault(VAULT_PATH)
+        except Exception as e:
+            logger.warning("Failed to reindex after image upload: %s", e)
+    logger.info("Image uploaded: %s (%d bytes)", file.filename, len(content))
+    return JSONResponse({
+        "status": "uploaded",
+        "file": file.filename,
+        "path": str(dest),
+        "url": f"/api/images/{file.filename}",
+    })
+
+
+@app.get("/api/images/{filename}")
+def get_image(filename: str, request: Request) -> FileResponse | JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    images_dir = _ROOT / "vihang_data" / "images"
+    file_path = (images_dir / filename).resolve()
+    if not str(file_path).startswith(str(images_dir.resolve())):
+        return JSONResponse({"error": "invalid path"}, status_code=400)
+    if not file_path.exists():
+        return JSONResponse({"error": "not found"}, status_code=404)
+    mime_map = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp", ".svg": "image/svg+xml"}
+    return FileResponse(str(file_path), media_type=mime_map.get(file_path.suffix, "application/octet-stream"))
+
+
+@app.get("/api/graph")
+def knowledge_graph(request: Request) -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    ckb_dir = _ROOT / "CKB"
+    graph_file = ckb_dir / "graph.json"
+    if not graph_file.exists():
+        return JSONResponse({"nodes": [], "edges": [], "report": None})
+    try:
+        graph_data = json.loads(graph_file.read_text(encoding="utf-8"))
+        report_file = ckb_dir / "GRAPH_REPORT.md"
+        report = report_file.read_text(encoding="utf-8") if report_file.exists() else None
+        return JSONResponse({"nodes": graph_data.get("nodes", []), "edges": graph_data.get("edges", []), "report": report})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/graph/generate")
+def generate_graph(request: Request) -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    import subprocess
+    script = _ROOT / "scripts" / "update_graph.py"
+    if not script.exists():
+        return JSONResponse({"error": "graph generation script not found"}, status_code=500)
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script)],
+            cwd=str(_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        return JSONResponse({
+            "status": "completed" if result.returncode == 0 else "failed",
+            "stdout": result.stdout[-2000:],
+            "stderr": result.stderr[-2000:],
+        })
+    except subprocess.TimeoutExpired:
+        return JSONResponse({"error": "graph generation timed out"}, status_code=504)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/meeting")
+async def capture_meeting(request: Request) -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    body = await request.json()
+    title = body.get("title", "Untitled Meeting").strip()
+    attendees = body.get("attendees", [])
+    raw_notes = body.get("notes", "").strip()
+    if not raw_notes:
+        return JSONResponse({"error": "empty notes"}, status_code=400)
+    if not _ready or not _ollama_ok:
+        return JSONResponse({"error": "backend not ready: " + _ollama_error_msg}, status_code=503)
+    meeting_prompt = f"""You are Avinya, the permanent member of Vihang Drone Club. Process these meeting notes and return a structured summary in markdown.
+
+Format your response as:
+## Summary
+(Brief 2-3 sentence overview)
+
+## Key Discussion Points
+- Point 1
+- Point 2
+...
+
+## Action Items
+- [ ] Action item (assignee if mentioned)
+...
+
+## Decisions Made
+- Decision 1
+...
+
+## Follow-up Topics
+- Topic 1
+...
+
+Meeting title: {title}
+Attendees: {', '.join(attendees) if attendees else 'Not specified'}
+
+Raw notes:
+{raw_notes}
+"""
+    try:
+        model = choose_model(raw_notes)
+        summary = ""
+        for token in generate_stream(meeting_prompt, model):
+            summary += token
+        md_content = f"""---
+source: meeting
+category: meeting
+title: {title}
+attendees: {', '.join(attendees) if attendees else 'Not specified'}
+created: {datetime.now().isoformat()}
+---
+
+# Meeting: {title}
+
+**Date:** {datetime.now().strftime("%Y-%m-%d")}
+**Attendees:** {', '.join(attendees) if attendees else 'Not specified'}
+
+## Raw Notes
+{raw_notes}
+
+## AI Summary
+{summary}
+"""
+        meetings_dir = Path(VAULT_PATH) / "meetings"
+        meetings_dir.mkdir(parents=True, exist_ok=True)
+        safe_title = "".join(c if c.isalnum() or c in " _-" else "_" for c in title)
+        filename = f"{datetime.now().strftime('%Y-%m-%d')}_{safe_title}.md"
+        (meetings_dir / filename).write_text(md_content, encoding="utf-8")
+        try:
+            reindex_vault(VAULT_PATH)
+        except Exception as e:
+            logger.warning("Failed to reindex after meeting capture: %s", e)
+        return JSONResponse({
+            "status": "captured",
+            "title": title,
+            "filename": filename,
+            "summary": summary,
+        })
+    except OllamaError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=503)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
 
 
 def main() -> None:
