@@ -27,6 +27,8 @@ edge-tts>=6.1
 pydub>=0.25
 
 # Best offline TTS — Kokoro 82M (Apache 2.0, Grade A voices)
+# NOTE: On Windows, requires Visual Studio C++ Build Tools
+#       On Linux/Mac: pip install kokoro misaki[en] soundfile
 kokoro>=0.9
 misaki[en]>=0.9
 soundfile

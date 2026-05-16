@@ -16,7 +16,10 @@ class KokoroTTS:
     """Best-quality offline TTS using Kokoro 82M (Apache 2.0).
 
     Runs entirely offline, ~300MB model, real-time on CPU.
-    Uses af_heart — Grade A warm American female voice.
+    Uses af_heart — Grade A warm female voice.
+
+    Requires: pip install kokoro misaki[en] soundfile
+    On Windows: also needs Visual Studio C++ Build Tools.
     """
 
     VOICE = "af_heart"
@@ -35,7 +38,7 @@ class KokoroTTS:
             self._available = True
             print("[TTS] Kokoro 82M loaded — best offline quality (af_heart)")
         except Exception as e:
-            print(f"[TTS] Kokoro not available: {e}")
+            print(f"[TTS] Kokoro not available (needs C++ build tools on Windows): {e}")
 
     @property
     def is_available(self) -> bool:
