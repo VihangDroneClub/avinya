@@ -47,6 +47,59 @@ from rag.retriever import retrieve_query_context
 from rag.indexer import reindex_vault, collection
 from prompts.system_prompt import SYSTEM_PROMPT
 
+import re
+
+_EMOJI_PATTERN = re.compile(
+    "["
+    "\U0001F600-\U0001F64F"
+    "\U0001F300-\U0001F5FF"
+    "\U0001F680-\U0001F6FF"
+    "\U0001F1E0-\U0001F1FF"
+    "\U00002702-\U000027B0"
+    "\U000024C2-\U0001F251"
+    "\U0001f926-\U0001f937"
+    "\U00010000-\U0010ffff"
+    "\u2640-\u2642"
+    "\u2600-\u2B55"
+    "\u23cf"
+    "\u23e9"
+    "\u231a"
+    "\ufe0f"
+    "\u3030"
+    "\u200d"
+    "\u20e3"
+    "\u25aa-\u25ab"
+    "\u25b6"
+    "\u25c0"
+    "\u25fb-\u25fe"
+    "]+",
+    flags=re.UNICODE,
+)
+
+_SYMBOLS_TO_STRIP = re.compile(r"[✓✗✔✘★☆♦♠♣♥→←↑↓⇒⇔•·‣⁃◦▪▫⦿●○■□▲▼◆◇★☆☀☁☂☃☄★☆☎☏✉✈✊✋✌✍✎✏✐✑✒✓✔✕✖✗✘✙✚✛✜✝✞✟✠✡✢✣✤✥✦✧✩✪✫✬✭✮✯✰✱✲✳✴✵✶✷✸✹✺✻✼✽✾✿❀❁❂❃❄❅❆❇❈❉❊❋❌❍❎❏❐❑❒❓❔❕❖❗❘❙❚❛❜❝❞]")
+
+
+def _clean_for_voice(text: str) -> str:
+    text = _EMOJI_PATTERN.sub("", text)
+    text = _SYMBOLS_TO_STRIP.sub("", text)
+    text = text.replace("**", "")
+    text = text.replace("*", "")
+    text = re.sub(r"#{1,6}\s*", "", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _format_for_tts(text: str) -> str:
+    text = _clean_for_voice(text)
+    text = re.sub(r"(\d+)\s*([A-Za-z])", r"\1 \2", text)
+    text = text.replace("e.g.,", "for example,")
+    text = text.replace("i.e.,", "that is,")
+    text = text.replace("etc.", "and so on.")
+    text = text.replace("vs.", "versus")
+    return text
+
 app = FastAPI(title="Avinya Web", version="3.0")
 
 RATE_LIMIT_REQUESTS = int(os.environ.get("AVINYA_RATE_LIMIT", "60"))
@@ -334,16 +387,18 @@ async def chat_stream(request: Request) -> Response:
                 yield f"data: {json.dumps({'type': 'meta', 'model': model, 'sources': sources, 'related': related, 'confidence': confidence, 'gap': gap})}\n\n"
             elif kind == "tok":
                 token = item[1]
-                stream_text += token
-                yield f"data: {json.dumps({'type': 'token', 'text': token})}\n\n"
+                clean_token = _clean_for_voice(token)
+                stream_text += clean_token
+                yield f"data: {json.dumps({'type': 'token', 'text': clean_token})}\n\n"
             elif kind == "err":
                 assistant_failed = True
                 yield f"data: {json.dumps({'type': 'error', 'message': item[1]})}\n\n"
             elif kind == "done":
                 elapsed = float(item[1]) if len(item) > 1 else 0.0
                 if stream_text and not assistant_failed:
-                    memory.add_assistant_message(stream_text)
-                    session["messages"].append({"role": "assistant", "content": stream_text, "ts": datetime.now().isoformat()})
+                    cleaned = _clean_for_voice(stream_text)
+                    memory.add_assistant_message(cleaned)
+                    session["messages"].append({"role": "assistant", "content": cleaned, "ts": datetime.now().isoformat()})
                     session["updated"] = datetime.now().isoformat()
                     threading.Thread(target=lambda: maybe_roll_summary(memory), daemon=True).start()
                 yield f"data: {json.dumps({'type': 'done', 'elapsed': round(elapsed, 2)})}\n\n"
@@ -380,13 +435,14 @@ async def chat(request: Request) -> JSONResponse:
         prompt = _build_web_prompt(message, retrieval.answer_context, memory)
         answer = ""
         for token in generate_stream(prompt, model):
-            answer += token
+            answer += _clean_for_voice(token)
     except OllamaError as exc:
         return JSONResponse({"error": str(exc)}, status_code=503)
 
     elapsed = time.perf_counter() - started
-    memory.add_assistant_message(answer)
-    session["messages"].append({"role": "assistant", "content": answer, "ts": datetime.now().isoformat()})
+    cleaned = _clean_for_voice(answer)
+    memory.add_assistant_message(cleaned)
+    session["messages"].append({"role": "assistant", "content": cleaned, "ts": datetime.now().isoformat()})
     session["updated"] = datetime.now().isoformat()
     threading.Thread(target=lambda: maybe_roll_summary(memory), daemon=True).start()
 
@@ -1574,6 +1630,48 @@ def auto_reindex_status(request: Request) -> JSONResponse:
         return auth_err
     config_file = DATA_DIR / "auto_reindex.json"
     return JSONResponse(_load_json(config_file, {"enabled": False}))
+
+
+@app.post("/api/chat/tts")
+async def chat_tts(request: Request) -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    body = await request.json()
+    message = body.get("message", "").strip()
+    if not message:
+        return JSONResponse({"error": "empty message"}, status_code=400)
+    if not _ready or not _ollama_ok:
+        return JSONResponse({"error": "backend not ready"}, status_code=503)
+    try:
+        model = choose_model(message)
+        retrieval = retrieve_query_context(message, rerank=True)
+        prompt = _build_web_prompt(message, retrieval.answer_context, SessionMemory(max_recent=10))
+        answer = ""
+        for token in generate_stream(prompt, model):
+            answer += token
+        cleaned = _format_for_tts(answer)
+        return JSONResponse({
+            "text": cleaned,
+            "raw": answer,
+            "confidence": "high" if retrieval.sources else "low",
+        })
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/tts/speak")
+async def tts_speak(request: Request) -> JSONResponse:
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    body = await request.json()
+    text = body.get("text", "").strip()
+    if not text:
+        return JSONResponse({"error": "empty text"}, status_code=400)
+    cleaned = _format_for_tts(text)
+    return JSONResponse({"text": cleaned})
+
 
 def main() -> None:
     import uvicorn
