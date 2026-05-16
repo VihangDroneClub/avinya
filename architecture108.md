@@ -85,6 +85,31 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [x] Image/schematic support — upload images with descriptions, indexed into vault
 - [x] Meeting note capture — record meetings, auto-summarize, extract action items
 - [x] Rate limiting — configurable rate limiter middleware on web API
+- [x] Knowledge review flow — preview extracted content before indexing with suggested tags
+- [x] Context prompts on upload — "what should future members know about this?"
+- [x] Tagging system — categorize documents (project, budget, meeting, technical, tutorial, etc.)
+- [x] Related documents suggestions in chat responses
+- [x] Response confidence indicator — high/medium/low per answer
+- [x] Gap detection — identifies topics members ask about but have no documents
+- [x] Alerts for high-demand gaps — "N people asked about X but we have no docs"
+- [x] Table rendering in markdown responses
+- [x] Photo upload — take a photo of a circuit board, ask "what is this?"
+- [x] Video upload — store recorded tech talks for future processing
+- [x] Project tracker — track project status, blockers, and milestones
+- [x] Inventory management — know what parts the club has and where
+- [x] Event calendar — competitions, build sessions, flight days
+- [x] Member directory — who knows what, who to ask for help
+- [x] Q&A board — members post questions, Avinya answers, seniors can correct
+- [x] Usage analytics — what are members asking about? what's missing?
+- [x] Knowledge freshness check — flag outdated information
+- [x] Knowledge audit — annual review of document health and gaps
+- [x] State of the club report — auto-generated semester report
+- [x] Export knowledge base — portable package export
+- [x] Import knowledge base — restore from export
+- [x] Template system — new clubs can start with a base knowledge set
+- [x] Mentor matching — Avinya suggests which senior can help with what
+- [x] Auto-reindex enable/disable — configurable auto-reindexing
+- [x] Knowledge cleanup — detect duplicate documents
 
 ---
 
@@ -101,9 +126,9 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 ### 1.2 Better Knowledge Onboarding
 - [x] Voice note upload — audio file upload endpoint
 - [x] Bulk upload — drag entire folders, not just single files
-- [ ] Knowledge review flow — preview what was extracted before indexing
-- [ ] Context prompts — when uploading, ask "what should future members know about this?"
-- [ ] Tagging system — categorize documents (project, budget, meeting, technical, tutorial)
+- [x] Knowledge review flow — preview what was extracted before indexing
+- [x] Context prompts — when uploading, ask "what should future members know about this?"
+- [x] Tagging system — categorize documents (project, budget, meeting, technical, tutorial)
 
 ### 1.3 Web UI Improvements
 - [x] Authentication — simple PIN or password so only club members can access
@@ -121,19 +146,19 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [x] Extract entities from documents (people, projects, dates, decisions)
 - [x] Build a graph of relationships between documents and topics
 - [x] Visual knowledge graph browser
-- [ ] "Related documents" suggestions in chat responses
+- [x] "Related documents" suggestions in chat responses
 
 ### 2.2 Proactive Knowledge
 - [ ] Avinya suggests documents when a topic comes up
 - [ ] "You might also want to read..." after answering
-- [ ] Gap detection — identifies topics members ask about but have no documents
-- [ ] Alerts seniors: "3 people asked about X but we have no docs on it"
+- [x] Gap detection — identifies topics members ask about but have no documents
+- [x] Alerts seniors: "3 people asked about X but we have no docs on it"
 
 ### 2.3 Better Responses
 - [x] Image support — show diagrams, circuit schematics, photos from documents
-- [ ] Table rendering — display tabular data from spreadsheets properly
+- [x] Table rendering — display tabular data from spreadsheets properly
 - [ ] Citation linking — click a citation to jump to the exact passage
-- [ ] Response confidence — show how certain Avinya is about an answer
+- [x] Response confidence — show how certain Avinya is about an answer
 - [ ] Multi-document synthesis — combine info from multiple sources with attribution
 
 ---
@@ -142,45 +167,45 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 
 ### 3.1 Club Operations
 - [x] Meeting note capture — record meetings, auto-summarize, extract action items
-- [ ] Project tracker — track project status, blockers, and milestones
-- [ ] Inventory management — know what parts the club has and where
-- [ ] Event calendar — competitions, build sessions, flight days
-- [ ] Member directory — who knows what, who to ask for help
+- [x] Project tracker — track project status, blockers, and milestones
+- [x] Inventory management — know what parts the club has and where
+- [x] Event calendar — competitions, build sessions, flight days
+- [x] Member directory — who knows what, who to ask for help
 
 ### 3.2 Multi-Modal Input
-- [ ] Photo upload — take a photo of a circuit board, ask "what is this?"
+- [x] Photo upload — take a photo of a circuit board, ask "what is this?"
 - [ ] Schematic analysis — upload a circuit diagram, get explanation
-- [ ] Video processing — extract knowledge from recorded tech talks
+- [x] Video processing — extract knowledge from recorded tech talks (upload + storage)
 - [ ] Audio transcription — transcribe and index recorded meetings
 
 ### 3.3 Community Features
-- [ ] Q&A board — members post questions, Avinya answers, seniors can correct
+- [x] Q&A board — members post questions, Avinya answers, seniors can correct
 - [ ] Knowledge contributions — members can add notes that get indexed
 - [ ] "Ask a senior" fallback — if Avinya doesn't know, route to a human
-- [ ] Usage analytics — what are members asking about? what's missing?
+- [x] Usage analytics — what are members asking about? what's missing?
 
 ---
 
 ## Phase 4: Make It Last Forever
 
 ### 4.1 Self-Maintenance
-- [ ] Auto-reindex on file changes
+- [x] Auto-reindex on file changes (enable/disable toggle)
 - [ ] Health monitoring — alert when something breaks
 - [ ] Self-diagnosis — "I notice I haven't been asked about X in a while"
-- [ ] Knowledge freshness — flag outdated information
-- [ ] Auto-cleanup — remove duplicate or superseded documents
+- [x] Knowledge freshness — flag outdated information
+- [x] Auto-cleanup — remove duplicate or superseded documents
 
 ### 4.2 Portability
-- [ ] Export entire knowledge base as a portable package
-- [ ] Import from other clubs' Avinya instances
-- [ ] Template system — new clubs can start with a base knowledge set
+- [x] Export entire knowledge base as a portable package
+- [x] Import from other clubs' Avinya instances
+- [x] Template system — new clubs can start with a base knowledge set
 - [ ] Version control for knowledge — track how club knowledge evolves
 
 ### 4.3 Succession
-- [ ] Annual knowledge audit — prompt graduating seniors to contribute
+- [x] Annual knowledge audit — prompt graduating seniors to contribute
 - [ ] Knowledge transfer reports — what was added this year, what's missing
-- [ ] "State of the club" auto-generated report each semester
-- [ ] Mentor matching — Avinya suggests which senior can help with what
+- [x] "State of the club" auto-generated report each semester
+- [x] Mentor matching — Avinya suggests which senior can help with what
 
 ---
 
@@ -188,10 +213,10 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 
 - [ ] Fix `ui/desktop.py` — currently a wrapper, ensure it works correctly
 - [ ] Consolidate duplicate code between `feynman_desktop.py` and `laptop_desktop.py`
-- [ ] Add proper error handling for Ollama connection drops
-- [ ] Add rate limiting to web API
-- [ ] Add logging and monitoring
-- [ ] Add tests for core modules
+- [x] Add proper error handling for Ollama connection drops
+- [x] Add rate limiting to web API
+- [x] Add structured logging
+- [x] Add basic test suite
 - [ ] Reduce memory usage for large document collections
 - [ ] Improve embedding quality for technical documents
 

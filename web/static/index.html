@@ -13,7 +13,6 @@
 </head>
 <body>
 
-<!-- Auth Screen -->
 <div id="auth-screen" class="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">A</div>
@@ -27,7 +26,6 @@
   </div>
 </div>
 
-<!-- Main App (hidden until authenticated) -->
 <div id="app" style="display:none">
   <aside id="sidebar">
     <div class="sidebar-header">
@@ -73,9 +71,23 @@
       <button class="btn-secondary full-width" onclick="uploadKnowledge()">Upload Knowledge</button>
       <button class="btn-secondary full-width" onclick="uploadBulk()">Bulk Upload</button>
       <button class="btn-secondary full-width" onclick="uploadImage()">Upload Image</button>
+      <button class="btn-secondary full-width" onclick="uploadPhoto()">Upload Photo</button>
+      <button class="btn-secondary full-width" onclick="uploadVideo()">Upload Video</button>
       <button class="btn-secondary full-width" onclick="uploadAudio()">Upload Voice Note</button>
       <button class="btn-secondary full-width" onclick="captureMeeting()">Meeting Notes</button>
       <button class="btn-secondary full-width" onclick="showGraph()">Knowledge Graph</button>
+      <button class="btn-secondary full-width" onclick="showProjects()">Projects</button>
+      <button class="btn-secondary full-width" onclick="showInventory()">Inventory</button>
+      <button class="btn-secondary full-width" onclick="showCalendar()">Calendar</button>
+      <button class="btn-secondary full-width" onclick="showMembers()">Members</button>
+      <button class="btn-secondary full-width" onclick="showQA()">Q&A Board</button>
+      <button class="btn-secondary full-width" onclick="showAnalytics()">Analytics</button>
+      <button class="btn-secondary full-width" onclick="showGaps()">Knowledge Gaps</button>
+      <button class="btn-secondary full-width" onclick="showFreshness()">Freshness Check</button>
+      <button class="btn-secondary full-width" onclick="showAudit()">Knowledge Audit</button>
+      <button class="btn-secondary full-width" onclick="showStateReport()">State of Club</button>
+      <button class="btn-secondary full-width" onclick="exportKB()">Export Knowledge Base</button>
+      <button class="btn-secondary full-width" onclick="showTemplates()">Templates</button>
       <button class="btn-secondary full-width" onclick="exportCurrentChat()">Export Chat</button>
       <button class="btn-secondary full-width" onclick="reindexKnowledge()">Reindex All</button>
     </div>
@@ -96,6 +108,7 @@
         <span id="chat-subtitle">Ask me anything about the club</span>
       </div>
       <div class="header-actions">
+        <span id="confidence-chip" class="chip" style="display:none"></span>
         <span id="model-chip" class="chip">—</span>
         <button id="theme-toggle" class="icon-btn" title="Toggle theme">&#9790;</button>
       </div>
@@ -121,7 +134,6 @@
   </main>
 </div>
 
-<!-- Upload modal -->
 <div id="upload-modal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -138,6 +150,19 @@
           <input type="file" id="file-input" multiple accept=".pdf,.docx,.xlsx,.md,.txt,.csv" style="display:none" onchange="handleFileSelect(event)">
         </label>
       </div>
+      <div id="upload-preview" class="upload-preview" style="display:none">
+        <h4>Preview</h4>
+        <pre id="preview-content"></pre>
+        <div style="margin-top:8px">
+          <label style="font-size:12px;color:var(--text-secondary)">Suggested tags:</label>
+          <div id="suggested-tags" class="tag-selector"></div>
+        </div>
+        <div style="margin-top:8px">
+          <label style="font-size:12px;color:var(--text-secondary)">Context note (optional):</label>
+          <textarea id="context-note" rows="2" placeholder="What should future members know about this?" style="width:100%;margin-top:4px;padding:8px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);font-family:inherit;font-size:13px;resize:vertical"></textarea>
+        </div>
+        <button class="btn-primary full-width" style="margin-top:8px" onclick="confirmUpload()">Confirm & Index</button>
+      </div>
       <div id="upload-progress" class="upload-progress" style="display:none">
         <div class="progress-bar"><div class="progress-fill"></div></div>
         <p id="upload-status">Uploading...</p>
@@ -146,49 +171,6 @@
   </div>
 </div>
 
-<!-- Audio upload modal -->
-<div id="audio-modal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Upload Voice Note</h3>
-      <button class="icon-btn" onclick="closeAudioModal()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p class="muted">Upload a voice recording. Add a text summary alongside for indexing.</p>
-      <div class="drop-zone" id="audio-drop-zone">
-        <p>Drop audio files here</p>
-        <p class="muted">WAV, MP3, M4A, OGG, FLAC</p>
-        <p class="muted">or</p>
-        <label class="btn-primary">
-          Browse Audio
-          <input type="file" id="audio-file-input" multiple accept=".wav,.mp3,.m4a,.ogg,.flac" style="display:none" onchange="handleAudioSelect(event)">
-        </label>
-      </div>
-      <div id="audio-progress" class="upload-progress" style="display:none">
-        <div class="progress-bar"><div class="progress-fill"></div></div>
-        <p id="audio-status">Uploading...</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Document viewer modal -->
-<div id="doc-viewer-modal" class="modal modal-full">
-  <div class="modal-content modal-full-content">
-    <div class="modal-header">
-      <h3 id="doc-viewer-title">Document</h3>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span id="doc-viewer-source" class="muted"></span>
-        <button class="icon-btn" onclick="closeDocViewer()">&times;</button>
-      </div>
-    </div>
-    <div class="modal-body doc-viewer-body">
-      <pre id="doc-viewer-content"></pre>
-    </div>
-  </div>
-</div>
-
-<!-- Bulk upload modal -->
 <div id="bulk-modal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -221,7 +203,6 @@
   </div>
 </div>
 
-<!-- Image upload modal -->
 <div id="image-modal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -251,7 +232,85 @@
   </div>
 </div>
 
-<!-- Meeting capture modal -->
+<div id="photo-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Upload Photo</h3>
+      <button class="icon-btn" onclick="closePhotoModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted">Take a photo of a circuit board, drone part, or anything. Ask a question about it.</p>
+      <div class="drop-zone" id="photo-drop-zone">
+        <p>Drop photos here</p>
+        <p class="muted">PNG, JPG, GIF, BMP, WebP</p>
+        <p class="muted">or</p>
+        <label class="btn-primary">
+          Browse Photos
+          <input type="file" id="photo-file-input" accept=".png,.jpg,.jpeg,.gif,.bmp,.webp" style="display:none" onchange="handlePhotoSelect(event)">
+        </label>
+      </div>
+      <div style="margin-top:12px">
+        <label style="font-size:12px;color:var(--text-secondary)">Question about this photo</label>
+        <textarea id="photo-question" rows="2" placeholder="e.g. What is this component?" style="width:100%;margin-top:4px;padding:8px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);font-family:inherit;font-size:13px;resize:vertical"></textarea>
+      </div>
+      <div id="photo-progress" class="upload-progress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <p id="photo-status">Uploading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="video-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Upload Video</h3>
+      <button class="icon-btn" onclick="closeVideoModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted">Upload recorded tech talks or meeting recordings.</p>
+      <div class="drop-zone" id="video-drop-zone">
+        <p>Drop video files here</p>
+        <p class="muted">MP4, AVI, MOV, MKV, WebM</p>
+        <p class="muted">or</p>
+        <label class="btn-primary">
+          Browse Videos
+          <input type="file" id="video-file-input" accept=".mp4,.avi,.mov,.mkv,.webm" style="display:none" onchange="handleVideoSelect(event)">
+        </label>
+      </div>
+      <div id="video-progress" class="upload-progress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <p id="video-status">Uploading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="audio-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Upload Voice Note</h3>
+      <button class="icon-btn" onclick="closeAudioModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted">Upload a voice recording. Add a text summary alongside for indexing.</p>
+      <div class="drop-zone" id="audio-drop-zone">
+        <p>Drop audio files here</p>
+        <p class="muted">WAV, MP3, M4A, OGG, FLAC</p>
+        <p class="muted">or</p>
+        <label class="btn-primary">
+          Browse Audio
+          <input type="file" id="audio-file-input" multiple accept=".wav,.mp3,.m4a,.ogg,.flac" style="display:none" onchange="handleAudioSelect(event)">
+        </label>
+      </div>
+      <div id="audio-progress" class="upload-progress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <p id="audio-status">Uploading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="meeting-modal" class="modal modal-full">
   <div class="modal-content modal-full-content">
     <div class="modal-header">
@@ -279,7 +338,6 @@
   </div>
 </div>
 
-<!-- Knowledge graph modal -->
 <div id="graph-modal" class="modal modal-full">
   <div class="modal-content modal-full-content">
     <div class="modal-header">
@@ -298,6 +356,219 @@
         </div>
       </div>
       <div id="graph-report" style="max-height:30vh;overflow-y:auto;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);display:none"></div>
+    </div>
+  </div>
+</div>
+
+<div id="projects-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Project Tracker</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="showNewProjectForm()">+ New Project</button>
+        <button class="icon-btn" onclick="closeProjects()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="new-project-form" style="display:none;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px">
+        <input type="text" id="project-name" placeholder="Project name" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <textarea id="project-desc" placeholder="Description" rows="2" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);resize:vertical"></textarea>
+        <select id="project-status" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+          <option value="planning">Planning</option>
+          <option value="active">Active</option>
+          <option value="on-hold">On Hold</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button class="btn-primary full-width" onclick="createProject()">Create</button>
+      </div>
+      <div id="projects-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="inventory-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Inventory</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="showNewItemForm()">+ Add Item</button>
+        <button class="icon-btn" onclick="closeInventory()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="new-item-form" style="display:none;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px">
+        <input type="text" id="item-name" placeholder="Item name" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="text" id="item-category" placeholder="Category (e.g. electronics, motors)" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="number" id="item-qty" placeholder="Quantity" value="1" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="text" id="item-location" placeholder="Location (e.g. shelf A, drawer 3)" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <button class="btn-primary full-width" onclick="addItem()">Add</button>
+      </div>
+      <div id="inventory-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="calendar-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Event Calendar</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="showNewEventForm()">+ Add Event</button>
+        <button class="icon-btn" onclick="closeCalendar()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="new-event-form" style="display:none;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px">
+        <input type="text" id="event-title" placeholder="Event title" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="date" id="event-date" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="text" id="event-location" placeholder="Location" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <select id="event-type" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+          <option value="competition">Competition</option>
+          <option value="build-session">Build Session</option>
+          <option value="flight_day">Flight Day</option>
+          <option value="meeting">Meeting</option>
+          <option value="general">General</option>
+        </select>
+        <button class="btn-primary full-width" onclick="createEvent()">Add Event</button>
+      </div>
+      <div id="calendar-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="members-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Member Directory</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="showNewMemberForm()">+ Add Member</button>
+        <button class="icon-btn" onclick="closeMembers()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="new-member-form" style="display:none;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px">
+        <input type="text" id="member-name" placeholder="Name" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="text" id="member-role" placeholder="Role (e.g. senior, junior, lead)" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="text" id="member-expertise" placeholder="Expertise (comma-separated)" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <input type="text" id="member-contact" placeholder="Contact (email/phone)" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <button class="btn-primary full-width" onclick="addMember()">Add</button>
+      </div>
+      <div id="members-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="qa-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Q&A Board</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="showNewQuestionForm()">+ Ask Question</button>
+        <button class="icon-btn" onclick="closeQA()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="new-question-form" style="display:none;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px">
+        <textarea id="qa-question" placeholder="Your question..." rows="3" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);resize:vertical"></textarea>
+        <input type="text" id="qa-asked-by" placeholder="Your name" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <button class="btn-primary full-width" onclick="postQuestion()">Post Question</button>
+      </div>
+      <div id="qa-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="analytics-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Usage Analytics</h3>
+      <button class="icon-btn" onclick="closeAnalytics()">&times;</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="analytics-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="gaps-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Knowledge Gaps</h3>
+      <button class="icon-btn" onclick="closeGaps()">&times;</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="gaps-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="freshness-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Knowledge Freshness</h3>
+      <button class="icon-btn" onclick="closeFreshness()">&times;</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="freshness-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="audit-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Knowledge Audit</h3>
+      <button class="icon-btn" onclick="closeAudit()">&times;</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="audit-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="state-report-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>State of the Club</h3>
+      <button class="icon-btn" onclick="closeStateReport()">&times;</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="state-report-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="templates-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3>Knowledge Templates</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="showNewTemplateForm()">+ New Template</button>
+        <button class="icon-btn" onclick="closeTemplates()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="new-template-form" style="display:none;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px">
+        <input type="text" id="template-name" placeholder="Template name" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text)">
+        <textarea id="template-content" placeholder="Template content (markdown)" rows="8" style="width:100%;margin-bottom:8px;padding:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);resize:vertical"></textarea>
+        <button class="btn-primary full-width" onclick="createTemplate()">Create</button>
+      </div>
+      <div id="templates-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="doc-viewer-modal" class="modal modal-full">
+  <div class="modal-content modal-full-content">
+    <div class="modal-header">
+      <h3 id="doc-viewer-title">Document</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="doc-viewer-source" class="muted"></span>
+        <button class="icon-btn" onclick="closeDocViewer()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body doc-viewer-body">
+      <pre id="doc-viewer-content"></pre>
     </div>
   </div>
 </div>
