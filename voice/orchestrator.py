@@ -29,6 +29,7 @@ class VoiceOrchestrator:
             piper_model_path=str(self.base_dir / "assets/models/piper/en_IN_voice.onnx"),
             piper_config_path=str(self.base_dir / "assets/models/piper/en_IN_voice.onnx.json"),
             prefer_edge=True,
+            prefer_kokoro_offline=True,
         )
         self.stt = STT("tiny.en", download_root=str(self.base_dir / "assets/models/whisper"))
         self.wake_detector = WakeWordDetector(

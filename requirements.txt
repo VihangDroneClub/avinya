@@ -22,9 +22,14 @@ librosa
 openwakeword
 tflite-runtime
 
-# Premium TTS — young Indian female voice (en-IN-NeerjaNeural)
+# Premium TTS — young Indian female voice (en-IN-NeerjaExpressiveNeural)
 edge-tts>=6.1
 pydub>=0.25
+
+# Best offline TTS — Kokoro 82M (Apache 2.0, Grade A voices)
+kokoro>=0.9
+misaki[en]>=0.9
+soundfile
 
 # Optional tuning via env: see core/config.py
 # AVINYA_MODEL_DEFAULT, AVINYA_MODEL_REASONING, OLLAMA_GENERATE_URL, AVINYA_CHROMA_PATH, ...
