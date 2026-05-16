@@ -176,7 +176,7 @@ Avinya exists so that when seniors graduate, their knowledge doesn't leave with 
 - [x] Photo upload — take a photo of a circuit board, ask "what is this?"
 - [ ] Schematic analysis — upload a circuit diagram, get explanation
 - [x] Video processing — extract knowledge from recorded tech talks (upload + storage)
-- [ ] Audio transcription — transcribe and index recorded meetings
+- [x] Audio transcription — transcribe and index recorded meetings
 
 ### 3.3 Community Features
 - [x] Q&A board — members post questions, Avinya answers, seniors can correct

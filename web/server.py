@@ -814,7 +814,7 @@ def export_session(session_id: str, request: Request) -> Response:
     })
 
 @app.post("/api/upload/audio")
-async def upload_audio(request: Request, file: UploadFile = File(...)) -> JSONResponse:
+async def upload_audio(request: Request, file: UploadFile = File(...), transcribe: bool = False) -> JSONResponse:
     auth_err = _require_auth(request)
     if auth_err:
         return auth_err
@@ -826,12 +826,117 @@ async def upload_audio(request: Request, file: UploadFile = File(...)) -> JSONRe
     content = await file.read()
     dest.write_bytes(content)
     logger.info("Audio uploaded: %s (%d bytes)", file.filename, len(content))
+
+    if transcribe:
+        try:
+            from voice.stt import STT
+            stt = STT("tiny.en", download_root=str(_ROOT / "assets/models/whisper"))
+            transcription = stt.transcribe_file(str(dest))
+            if transcription:
+                md_content = f"""---
+source: {file.filename}
+category: transcription
+uploaded: {datetime.now().isoformat()}
+---
+
+# Audio Transcription: {file.filename}
+
+**Date:** {datetime.now().strftime("%Y-%m-%d")}
+**Duration:** {len(content) / 32000:.1f} seconds (approximate)
+
+## Transcript
+
+{transcription}
+"""
+                transcriptions_dir = Path(VAULT_PATH) / "transcriptions"
+                transcriptions_dir.mkdir(parents=True, exist_ok=True)
+                safe_name = "".join(c if c.isalnum() or c in " _-" else "_" for c in file.filename)
+                md_path = transcriptions_dir / f"{safe_name}.md"
+                md_path.write_text(md_content, encoding="utf-8")
+                try:
+                    reindex_vault(VAULT_PATH)
+                except Exception as e:
+                    logger.warning("Failed to reindex after transcription: %s", e)
+                return JSONResponse({
+                    "status": "transcribed",
+                    "file": file.filename,
+                    "transcription": transcription,
+                    "indexed": True,
+                })
+            return JSONResponse({"error": "no speech detected"}, status_code=400)
+        except Exception as exc:
+            logger.error("Transcription failed: %s", exc)
+            return JSONResponse({"error": f"transcription failed: {str(exc)}"}, status_code=500)
+
     return JSONResponse({
         "status": "uploaded",
         "file": file.filename,
         "path": str(dest),
-        "note": "Audio files are stored for manual transcription. Add a text summary alongside for indexing.",
+        "note": "Audio file stored. Use transcribe=true to transcribe.",
     })
+
+
+@app.post("/api/transcribe")
+async def transcribe_audio(request: Request, file: UploadFile = File(...), title: str = "") -> JSONResponse:
+    """Transcribe an audio file and index the result into the knowledge base."""
+    auth_err = _require_auth(request)
+    if auth_err:
+        return auth_err
+    if not file.filename or not file.filename.lower().endswith((".wav", ".mp3", ".m4a", ".ogg", ".flac")):
+        return JSONResponse({"error": "unsupported audio format"}, status_code=400)
+
+    inbox = DATA_DIR / "inbox" / "audio"
+    inbox.mkdir(parents=True, exist_ok=True)
+    dest = inbox / file.filename
+    content = await file.read()
+    dest.write_bytes(content)
+
+    try:
+        from voice.stt import STT
+        stt = STT("tiny.en", download_root=str(_ROOT / "assets/models/whisper"))
+        transcription = stt.transcribe_file(str(dest))
+        if not transcription:
+            return JSONResponse({"error": "no speech detected in audio"}, status_code=400)
+
+        display_title = title.strip() or f"Transcription: {file.filename}"
+        md_content = f"""---
+source: {file.filename}
+category: transcription
+title: {display_title}
+uploaded: {datetime.now().isoformat()}
+---
+
+# {display_title}
+
+**Date:** {datetime.now().strftime("%Y-%m-%d")}
+**Source:** {file.filename}
+
+## Transcript
+
+{transcription}
+"""
+        transcriptions_dir = Path(VAULT_PATH) / "transcriptions"
+        transcriptions_dir.mkdir(parents=True, exist_ok=True)
+        safe_name = "".join(c if c.isalnum() or c in " _-" else "_" for c in display_title)
+        md_path = transcriptions_dir / f"{safe_name}.md"
+        md_path.write_text(md_content, encoding="utf-8")
+        try:
+            reindex_vault(VAULT_PATH)
+        except Exception as e:
+            logger.warning("Failed to reindex after transcription: %s", e)
+
+        logger.info("Audio transcribed and indexed: %s", file.filename)
+        return JSONResponse({
+            "status": "transcribed",
+            "file": file.filename,
+            "title": display_title,
+            "transcription": transcription,
+            "word_count": len(transcription.split()),
+            "indexed": True,
+        })
+    except Exception as exc:
+        logger.error("Transcription failed: %s", exc)
+        return JSONResponse({"error": f"transcription failed: {str(exc)}"}, status_code=500)
 
 @app.post("/api/upload/image")
 async def upload_image(request: Request, file: UploadFile = File(...), description: str = "") -> JSONResponse:

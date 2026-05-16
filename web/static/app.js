@@ -197,16 +197,30 @@ async function uploadAudioFiles(files) {
   const progress = document.getElementById("audio-progress");
   const status = document.getElementById("audio-status");
   const fill = progress.querySelector(".progress-fill");
+  const transcribe = document.getElementById("audio-transcribe").checked;
+  const title = document.getElementById("audio-title").value.trim();
+  const transcriptDiv = document.getElementById("audio-transcript");
+  const transcriptText = document.getElementById("audio-transcript-text");
   progress.style.display = "block";
+  transcriptDiv.style.display = "none";
   fill.style.width = "0%";
+
   for (const file of files) {
-    status.textContent = `Uploading ${file.name}...`;
+    status.textContent = transcribe ? `Transcribing ${file.name}...` : `Uploading ${file.name}...`;
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload/audio", { method: "POST", body: formData });
+      if (transcribe) formData.append("title", title || file.name);
+      const endpoint = transcribe ? "/api/transcribe" : "/api/upload/audio";
+      const res = await fetch(endpoint, { method: "POST", body: formData });
       const result = await res.json();
-      if (result.status === "uploaded") {
+      if (result.status === "transcribed") {
+        status.textContent = `Transcribed: ${result.word_count} words, indexed`;
+        fill.style.width = "100%";
+        transcriptDiv.style.display = "block";
+        transcriptText.textContent = result.transcription;
+        loadKnowledge();
+      } else if (result.status === "uploaded") {
         status.textContent = `Saved: ${file.name}`;
         fill.style.width = "100%";
       } else {
@@ -218,7 +232,7 @@ async function uploadAudioFiles(files) {
       fill.style.width = "0%";
     }
   }
-  setTimeout(() => { progress.style.display = "none"; }, 3000);
+  setTimeout(() => { progress.style.display = "none"; }, 5000);
 }
 
 async function loadSessions() {

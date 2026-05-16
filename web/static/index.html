@@ -73,7 +73,7 @@
       <button class="btn-secondary full-width" onclick="uploadImage()">Upload Image</button>
       <button class="btn-secondary full-width" onclick="uploadPhoto()">Upload Photo</button>
       <button class="btn-secondary full-width" onclick="uploadVideo()">Upload Video</button>
-      <button class="btn-secondary full-width" onclick="uploadAudio()">Upload Voice Note</button>
+      <button class="btn-secondary full-width" onclick="uploadAudio()">Transcribe Audio</button>
       <button class="btn-secondary full-width" onclick="captureMeeting()">Meeting Notes</button>
       <button class="btn-secondary full-width" onclick="showGraph()">Knowledge Graph</button>
       <button class="btn-secondary full-width" onclick="showProjects()">Projects</button>
@@ -296,11 +296,11 @@
 <div id="audio-modal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Upload Voice Note</h3>
+      <h3>Upload Audio</h3>
       <button class="icon-btn" onclick="closeAudioModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <p class="muted">Upload a voice recording. Add a text summary alongside for indexing.</p>
+      <p class="muted">Upload voice notes, meeting recordings, or any audio. Optionally transcribe to text and index.</p>
       <div class="drop-zone" id="audio-drop-zone">
         <p>Drop audio files here</p>
         <p class="muted">WAV, MP3, M4A, OGG, FLAC</p>
@@ -310,9 +310,21 @@
           <input type="file" id="audio-file-input" multiple accept=".wav,.mp3,.m4a,.ogg,.flac" style="display:none" onchange="handleAudioSelect(event)">
         </label>
       </div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="audio-transcribe" checked>
+        <label for="audio-transcribe" style="font-size:13px;color:var(--text-secondary)">Transcribe to text and index in knowledge base</label>
+      </div>
+      <div id="audio-title-group" style="margin-top:8px">
+        <label style="font-size:12px;color:var(--text-secondary)">Title (optional)</label>
+        <input type="text" id="audio-title" placeholder="e.g. Team meeting May 15" style="width:100%;margin-top:4px;padding:8px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);font-family:inherit;font-size:13px">
+      </div>
       <div id="audio-progress" class="upload-progress" style="display:none">
         <div class="progress-bar"><div class="progress-fill"></div></div>
         <p id="audio-status">Uploading...</p>
+      </div>
+      <div id="audio-transcript" style="display:none;margin-top:12px;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border);max-height:200px;overflow-y:auto">
+        <h4 style="font-size:13px;margin-bottom:8px">Transcript</h4>
+        <p id="audio-transcript-text" style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap"></p>
       </div>
     </div>
   </div>
